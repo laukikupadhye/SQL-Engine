@@ -16,5 +16,6 @@ public class New {
        
         System.out.println("Hello");
         System.out.println("Database Design");
+        System.out.println("CIS 552");
     }
 }

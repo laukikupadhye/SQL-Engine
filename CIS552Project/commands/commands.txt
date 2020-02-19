@@ -1,3 +1,4 @@
-CREATE TABLE R (A int, B date);
-SELECT A, B 
+CREATE TABLE R (A int, B int);
+SELECT B 
 FROM R;
+SELECT A+B From R;

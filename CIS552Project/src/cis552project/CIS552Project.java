@@ -9,7 +9,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,8 +27,6 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.statement.select.Union;
-import net.sf.jsqlparser.statement.select.WithItem;
 
 /**
  *
@@ -33,53 +34,103 @@ import net.sf.jsqlparser.statement.select.WithItem;
  */
 public class CIS552Project {
 
+    static String dataPath = null;
+    static String commandsLoc = null;
+    static Map<String, List<ColumnDefinition>> tables = new HashMap<>();
+    
+    static Map<String, String> sql2JavaType = new HashMap<>();
+    {
+        sql2JavaType.put("string", "String");
+        sql2JavaType.put("varchar", "String");
+        sql2JavaType.put("char", "String");
+        sql2JavaType.put("int", "Long");
+        sql2JavaType.put("decimal", "Double");
+        sql2JavaType.put("decimal", "Date");
+        
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        //Reader reader = new StringReader("Select R.* FROM R , S");
-        Reader reader = new StringReader("CREATE TABLE R(A int, B int)");
-        CCJSqlParser parser = new CCJSqlParser(reader);
+        dataPath = args[0];
+        commandsLoc = args[1];
+
         try {
-            Statement statement = parser.Statement();
-            System.out.println(statement);
-            if(statement instanceof Select){
-                Select select = (Select) statement;
-                SelectBody selectBody   = select.getSelectBody();
-                if(selectBody instanceof PlainSelect){
-                    PlainSelect plainSelect = (PlainSelect) selectBody;
-                    List<SelectItem> selectItems = plainSelect.getSelectItems();
-                    List<Join> joins = plainSelect.getJoins();
-                    FromItem fromItem = plainSelect.getFromItem();
-                    System.out.println(fromItem);
-                    System.out.println(selectItems);
-                    System.out.println(joins);
-                    fileRead();
+            List<String> commands = readCommands(commandsLoc);
+            commands.stream().forEach(System.out::println);
+            for (String command : commands) {
+                Reader reader = new StringReader(command);
+                CCJSqlParser parser = new CCJSqlParser(reader);
+                Statement statement = parser.Statement();
+                System.out.println(statement);
+                if (statement instanceof Select) {
+                    Select select = (Select) statement;
+                    SelectBody selectBody = select.getSelectBody();
+                    if (selectBody instanceof PlainSelect) {
+                        PlainSelect plainSelect = (PlainSelect) selectBody;
+                        List<SelectItem> selectItems = plainSelect.getSelectItems();
+                        List<Join> joins = plainSelect.getJoins();
+                        FromItem fromItem = plainSelect.getFromItem();
+                        System.out.println(fromItem);
+                        System.out.println(selectItems);
+                        System.out.println(joins);
+                        //readTable(dataPath);
+                    }
+                } else if (statement instanceof CreateTable) {
+                    CreateTable createTable = (CreateTable) statement;
+                    List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
+                    tables.put(createTable.getTable().getWholeTableName(), columnDefinitions);
                 }
-            }else if(statement instanceof CreateTable){
-                CreateTable createTable= (CreateTable) statement;
-                List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
-                System.out.println(columnDefinitions);
             }
-        } catch (ParseException ex) {
-            Logger.getLogger(CIS552Project.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (FileNotFoundException ex) {
+            for (Map.Entry<String, List<ColumnDefinition>> entry : tables.entrySet()) {
+                String key = entry.getKey();
+                List<ColumnDefinition> value = entry.getValue();
+                System.out.println(key + value);
+                
+            }
+        } catch (ParseException | FileNotFoundException ex) {
             Logger.getLogger(CIS552Project.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
-    private static void fileRead() throws FileNotFoundException{
-        File myObj = new File("data\\R.dat");
-        Scanner myReader = new Scanner(myObj);
-        while (myReader.hasNextLine()) {
-            String data = myReader.nextLine();
-            String[] split = data.split("\\|");
-            for (String item:split){
-                System.out.println(item);
-            }
-            System.out.println(data + " ---> " +split.length + " --- " + split[0] + "-" + split[1]);
-      }
-      myReader.close();
 
+    private static List<String> readCommands(String filePath) throws FileNotFoundException {
+        File myObj = new File(filePath);
+        List<String> statements = new ArrayList<>();
+        try ( Scanner myReader = new Scanner(myObj)) {
+            String previousString = "";
+            while (myReader.hasNext()) {
+                String statement = myReader.next();
+                if (!statement.endsWith(";")) {
+                    previousString += " " + statement;
+                    continue;
+                } else {
+                    statement = previousString + " " + statement;
+                    previousString = "";
+                }
+                statements.add(statement);
+            }
+        }
+        return statements;
     }
+    
+    private static void readTable(String filePath) throws FileNotFoundException {
+        File myObj = new File(filePath);
+        List<String> statements = new ArrayList<>();
+        try ( Scanner myReader = new Scanner(myObj)) {
+            String previousString = "";
+            while (myReader.hasNext()) {
+                String statement = myReader.next();
+                if (!statement.endsWith(";")) {
+                    previousString += " " + statement;
+                    continue;
+                } else {
+                    statement = previousString + " " + statement;
+                    previousString = "";
+                }
+                statements.add(statement);
+            }
+        }
+    }
+    
 }

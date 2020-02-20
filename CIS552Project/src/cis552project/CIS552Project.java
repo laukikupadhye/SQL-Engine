@@ -28,6 +28,7 @@ import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.Distinct;
@@ -46,20 +47,21 @@ public class CIS552Project {
 
     static String dataPath = null;
     static String commandsLoc = null;
-    static Map<String, Map<String, String>> tables = new HashMap<>();
-    static Map<Pair<String,String>, Integer> resultIndexes = new HashMap<>();
+    static Map<String, List<String>> tables = new HashMap<>();
+    static Map<String, Integer> colPositions = new HashMap<>();
+    static Map<String, ColDataType> colTypes = new HashMap<>();
+    static Map<String, String> aliasandTableName = new HashMap<>();
 
-    static Map<String, String> sql2JavaType = new HashMap<>();
-
-    {
-        sql2JavaType.put("string", "String");
-        sql2JavaType.put("varchar", "String");
-        sql2JavaType.put("char", "String");
-        sql2JavaType.put("int", "Long");
-        sql2JavaType.put("decimal", "Double");
-        sql2JavaType.put("decimal", "Date");
-    }
-
+//    static Map<String, String> sql2JavaType = new HashMap<>();
+//
+//    {
+//        sql2JavaType.put("string", "String");
+//        sql2JavaType.put("varchar", "String");
+//        sql2JavaType.put("char", "String");
+//        sql2JavaType.put("int", "Long");
+//        sql2JavaType.put("decimal", "Double");
+//        sql2JavaType.put("decimal", "Date");
+//    }
     /**
      * @param args the command line arguments
      */
@@ -83,11 +85,7 @@ public class CIS552Project {
 
                     }
                 } else if (statement instanceof CreateTable) {
-                    CreateTable createTable = (CreateTable) statement;
-                    tables.put(createTable.getTable().getWholeTableName(),
-                            createTable.getColumnDefinitions().stream().
-                                    collect(Collectors.toMap(x -> x.getColumnName(),
-                                            x -> x.getColDataType().getDataType())));
+                    createTable(statement);
                 }
             }
         } catch (ParseException | FileNotFoundException ex) {
@@ -115,8 +113,23 @@ public class CIS552Project {
         return commandsList;
     }
 
-    private static void evaluateResult(PlainSelect plainSelect) throws FileNotFoundException {
+    private static void createTable(Statement statement) {
+        CreateTable createTable = (CreateTable) statement;
+        int index = 0;
 
+        String tableName = createTable.getTable().getWholeTableName();
+        List<String> colNamesList = new ArrayList<>();
+        for (ColumnDefinition columnDefinition : createTable.getColumnDefinitions()) {
+            String colName = columnDefinition.getColumnName();
+            colNamesList.add(colName);
+            colPositions.put(tableName + "." + colName, index);
+            colTypes.put(tableName + "." + colName, columnDefinition.getColDataType());
+            index++;
+        }
+        tables.put(tableName, colNamesList);
+    }
+
+    private static void evaluateResult(PlainSelect plainSelect) throws FileNotFoundException {
         List<SelectItem> selectItems = plainSelect.getSelectItems();
         List<Join> joins = plainSelect.getJoins();
         FromItem fromItem = plainSelect.getFromItem();
@@ -127,37 +140,24 @@ public class CIS552Project {
         Limit limit = plainSelect.getLimit();
         List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
         Top top = plainSelect.getTop();
-        Expression where = plainSelect.getWhere();
 
+        String tableName = fromItem.toString();
+        String aliasName = tableName;
+        if (fromItem.getAlias() != null) {
+            aliasName = fromItem.getAlias();
+            tableName = fetchTableNameFromALias(fromItem);
+        }
+        aliasandTableName.put(aliasName, tableName);
+
+        Expression where = plainSelect.getWhere();
         // Reuse index logic and find out how to use it globally in joins as well.
-        Map<String, String> columnDef = tables.get(fromItem.toString());
-        Set<String> keySet = columnDef.keySet();
-        List<String> keysList = keySet.stream().collect(Collectors.toList());
-        System.out.println(selectItems);
-        List<Integer> posn = new ArrayList<>();
-        selectItems.forEach((selectItem) -> {
-            posn.add(keysList.indexOf(selectItem.toString()));
-        });
-        
-        List<String[]> rowResults = readTable(dataPath + "\\" + fromItem.toString() + ".dat");
+        System.out.println("____" + fromItem.getAlias() + "_____" + fromItem.toString());
+        List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
         if (where != null) {
 
         }
-        Map<String, String> tableAliasNames = new HashMap<>();
-        
-        printResult(rowResults);
-//        File myObj = new File(dataPath + "\\" + fromItem.toString() + ".dat");
-//        try ( Scanner myReader = new Scanner(myObj)) {
-//            while (myReader.hasNext()) {
-//                String dataRow = myReader.next();
-//                String[] split = dataRow.split("\\|");
-//                String singleRowResult = "";
-//                for (Integer i : posn) {
-//                    singleRowResult += "|" + split[i] + "|";
-//                }
-//                System.out.println(singleRowResult);
-//            }
-//        }
+
+        printResult(rowResults, selectItems);
     }
 
     private static List<String[]> readTable(String filePath) throws FileNotFoundException {
@@ -172,18 +172,34 @@ public class CIS552Project {
         }
         return resultRows;
     }
-    
-    private static void printResult(List<String[]> rowsResult){
+
+    private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems) {
+        
         System.out.println("Result :");
-//        System.out.println(String.join("|", selectItems);
+        String[] finalREsult = new String[selectItems.size()];
+        Integer[] pos= new Integer[selectItems.size()];
+        for (int i = 0; i < selectItems.size();i++) {
+                String selectALiasName = selectItems.get(i).toString().substring(0, selectItems.get(i).toString().indexOf("."));
+                String selectColumnName = selectItems.get(i).toString().substring(selectItems.get(i).toString().indexOf(".")+1, selectItems.get(i).toString().length());
+                String tableNAme = aliasandTableName.get(selectALiasName);
+                pos[i] = colPositions.get(tableNAme+"."+selectColumnName);
+            }
         rowsResult.forEach(result -> {
+            for (int i=0;i<pos.length;i++){
+                finalREsult[i] = result[pos[i]];
+            }
+            
 //            String singleRowResult = "";
 //                for (int i=0; i<selectItems.size();i++) {
 //                    singleRowResult += "|" + result[i] + "|";
 //                }
-                System.out.println(String.join("|", result));
+            System.out.println(String.join("|", finalREsult));
         });
         System.out.println("==================================================================================");
     }
 
+    private static String fetchTableNameFromALias(FromItem fromItem) {
+        String tableName = fromItem.toString().substring(0, fromItem.toString().indexOf(" AS "));
+        return tableName;
+    }
 }

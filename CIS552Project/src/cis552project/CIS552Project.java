@@ -9,8 +9,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -18,7 +20,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
@@ -36,12 +40,14 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.Top;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class CIS552Project {
 
     static String dataPath = null;
     static String commandsLoc = null;
     static Map<String, Map<String, String>> tables = new HashMap<>();
+    static Map<Pair<String,String>, Integer> resultIndexes = new HashMap<>();
 
     static Map<String, String> sql2JavaType = new HashMap<>();
 
@@ -74,7 +80,7 @@ public class CIS552Project {
                     if (selectBody instanceof PlainSelect) {
                         PlainSelect plainSelect = (PlainSelect) selectBody;
                         evaluateResult(plainSelect);
-                        //readTable(dataPath);
+
                     }
                 } else if (statement instanceof CreateTable) {
                     CreateTable createTable = (CreateTable) statement;
@@ -122,10 +128,8 @@ public class CIS552Project {
         List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
         Top top = plainSelect.getTop();
         Expression where = plainSelect.getWhere();
-        
-        
-        
-        
+
+        // Reuse index logic and find out how to use it globally in joins as well.
         Map<String, String> columnDef = tables.get(fromItem.toString());
         Set<String> keySet = columnDef.keySet();
         List<String> keysList = keySet.stream().collect(Collectors.toList());
@@ -134,26 +138,52 @@ public class CIS552Project {
         selectItems.forEach((selectItem) -> {
             posn.add(keysList.indexOf(selectItem.toString()));
         });
-        System.out.println("Result : \n");
-        System.out.println(selectItems);
-        readTable(dataPath+"\\"+fromItem.toString()+".dat", posn);       
+        
+        List<String[]> rowResults = readTable(dataPath + "\\" + fromItem.toString() + ".dat");
+        if (where != null) {
+
+        }
+        Map<String, String> tableAliasNames = new HashMap<>();
+        
+        printResult(rowResults);
+//        File myObj = new File(dataPath + "\\" + fromItem.toString() + ".dat");
+//        try ( Scanner myReader = new Scanner(myObj)) {
+//            while (myReader.hasNext()) {
+//                String dataRow = myReader.next();
+//                String[] split = dataRow.split("\\|");
+//                String singleRowResult = "";
+//                for (Integer i : posn) {
+//                    singleRowResult += "|" + split[i] + "|";
+//                }
+//                System.out.println(singleRowResult);
+//            }
+//        }
     }
 
-    private static void readTable(String filePath, List<Integer> posn) throws FileNotFoundException {
+    private static List<String[]> readTable(String filePath) throws FileNotFoundException {
         File myObj = new File(filePath);
-        List<String> statements = new ArrayList<>();
+        List<String[]> resultRows = new ArrayList<>();
         try ( Scanner myReader = new Scanner(myObj)) {
-            while(myReader.hasNext()){
+            while (myReader.hasNext()) {
                 String dataRow = myReader.next();
-                String[] split = dataRow.split("\\|");
-                for (Integer i : posn) {
-                    System.out.print(split[i]);
-                    if(posn.size()-1 != i)
-                        System.out.print("|");
-                }
-                System.out.println();
+                resultRows.add(dataRow.split("\\|"));
+                Pair<String, String> key = null;
             }
         }
+        return resultRows;
+    }
+    
+    private static void printResult(List<String[]> rowsResult){
+        System.out.println("Result :");
+//        System.out.println(String.join("|", selectItems);
+        rowsResult.forEach(result -> {
+//            String singleRowResult = "";
+//                for (int i=0; i<selectItems.size();i++) {
+//                    singleRowResult += "|" + result[i] + "|";
+//                }
+                System.out.println(String.join("|", result));
+        });
+        System.out.println("==================================================================================");
     }
 
 }

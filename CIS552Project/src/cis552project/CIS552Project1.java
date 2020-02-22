@@ -12,24 +12,29 @@ import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import net.sf.jsqlparser.eval.Eval;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.TimeValue;
+import net.sf.jsqlparser.expression.TimestampValue;
+import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.create.table.ColDataType;
-import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.Distinct;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -43,25 +48,13 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.Top;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class CIS552Project {
+public class CIS552Project1 {
 
     static String dataPath = null;
     static String commandsLoc = null;
-    static Map<String, List<String>> tables = new HashMap<>();
-    static Map<String, Integer> colPositions = new HashMap<>();
-    static Map<String, ColDataType> colTypes = new HashMap<>();
+    static Map<String, TableSchema> tables = new HashMap<>();
     static Map<String, String> aliasandTableName = new HashMap<>();
 
-//    static Map<String, String> sql2JavaType = new HashMap<>();
-//
-//    {
-//        sql2JavaType.put("string", "String");
-//        sql2JavaType.put("varchar", "String");
-//        sql2JavaType.put("char", "String");
-//        sql2JavaType.put("int", "Long");
-//        sql2JavaType.put("decimal", "Double");
-//        sql2JavaType.put("decimal", "Date");
-//    }
     /**
      * @param args the command line arguments
      */
@@ -88,15 +81,14 @@ public class CIS552Project {
                     createTable(statement);
                 }
             }
-        } catch (ParseException | FileNotFoundException ex) {
-            Logger.getLogger(CIS552Project.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParseException | FileNotFoundException | SQLException ex) {
+            Logger.getLogger(CIS552Project1.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     private static List<String> readCommands(String filePath) throws FileNotFoundException {
-        File myObj = new File(filePath);
         List<String> commandsList = new ArrayList<>();
-        try ( Scanner myReader = new Scanner(myObj)) {
+        try ( Scanner myReader = new Scanner(new File(filePath))) {
             String previousString = "";
             while (myReader.hasNext()) {
                 String statement = myReader.next();
@@ -115,21 +107,12 @@ public class CIS552Project {
 
     private static void createTable(Statement statement) {
         CreateTable createTable = (CreateTable) statement;
-        int index = 0;
-
-        String tableName = createTable.getTable().getWholeTableName();
-        List<String> colNamesList = new ArrayList<>();
-        for (ColumnDefinition columnDefinition : createTable.getColumnDefinitions()) {
-            String colName = columnDefinition.getColumnName();
-            colNamesList.add(colName);
-            colPositions.put(tableName + "." + colName, index);
-            colTypes.put(tableName + "." + colName, columnDefinition.getColDataType());
-            index++;
-        }
-        tables.put(tableName, colNamesList);
+        String tableName = createTable.getTable().getName();
+        TableSchema tableScehma = new TableSchema(tableName, createTable.getColumnDefinitions());
+        tables.put(tableName, tableScehma);
     }
 
-    private static void evaluateResult(PlainSelect plainSelect) throws FileNotFoundException {
+    private static void evaluateResult(PlainSelect plainSelect) throws FileNotFoundException, SQLException {
         List<SelectItem> selectItems = plainSelect.getSelectItems();
         List<Join> joins = plainSelect.getJoins();
         FromItem fromItem = plainSelect.getFromItem();
@@ -140,6 +123,7 @@ public class CIS552Project {
         Limit limit = plainSelect.getLimit();
         List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
         Top top = plainSelect.getTop();
+        Expression where = plainSelect.getWhere();
 
         String tableName = fromItem.toString();
         String aliasName = tableName;
@@ -149,14 +133,12 @@ public class CIS552Project {
         }
         aliasandTableName.put(aliasName, tableName);
 
-        Expression where = plainSelect.getWhere();
         // Reuse index logic and find out how to use it globally in joins as well.
         System.out.println("____" + fromItem.getAlias() + "_____" + fromItem.toString());
         List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
         if (where != null) {
-
+            applyCondition(rowResults, where);
         }
-
         printResult(rowResults, selectItems);
     }
 
@@ -174,27 +156,28 @@ public class CIS552Project {
     }
 
     private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems) {
-        
+
         System.out.println("Result :");
         String[] finalREsult = new String[selectItems.size()];
-        Integer[] pos= new Integer[selectItems.size()];
-        for (int i = 0; i < selectItems.size();i++) {
-                String selectALiasName = selectItems.get(i).toString().substring(0, selectItems.get(i).toString().indexOf("."));
-                String selectColumnName = selectItems.get(i).toString().substring(selectItems.get(i).toString().indexOf(".")+1, selectItems.get(i).toString().length());
-                String tableNAme = aliasandTableName.get(selectALiasName);
-                pos[i] = colPositions.get(tableNAme+"."+selectColumnName);
-            }
-        rowsResult.forEach(result -> {
-            for (int i=0;i<pos.length;i++){
-                finalREsult[i] = result[pos[i]];
-            }
+        Integer[] pos = new Integer[selectItems.size()];
+        for (int i = 0; i < selectItems.size(); i++) {
+            String selectALiasName = selectItems.get(i).toString().substring(0, selectItems.get(i).toString().indexOf("."));
+            String selectColumnName = selectItems.get(i).toString().substring(selectItems.get(i).toString().indexOf(".") + 1, selectItems.get(i).toString().length());
+            String tableNAme = aliasandTableName.get(selectALiasName);
             
+        }
+        for (String[] result : rowsResult) {
+
+//            for (int i = 0; i < pos.length; i++) {
+//                finalREsult[i] = result[pos[i]];
+//            }
+
 //            String singleRowResult = "";
 //                for (int i=0; i<selectItems.size();i++) {
 //                    singleRowResult += "|" + result[i] + "|";
 //                }
             System.out.println(String.join("|", finalREsult));
-        });
+        }
         System.out.println("==================================================================================");
     }
 
@@ -202,4 +185,82 @@ public class CIS552Project {
         String tableName = fromItem.toString().substring(0, fromItem.toString().indexOf(" AS "));
         return tableName;
     }
+
+    private static void applyCondition(List<String[]> rowResults, Expression where) throws SQLException {
+        Eval eval = new Eval() {
+            @Override
+            public PrimitiveValue eval(Column column) throws SQLException {
+                String tableName = aliasandTableName.get(column.getTable().getName());
+                SQLDataType colSqlDataType = tables.get(tableName).getSQLDataType(column.getColumnName());
+                switch (colSqlDataType) {
+                    case CHAR:
+                    case VARCHAR:
+                    case STRING:
+                        return new StringValue("");
+                    case DATE:
+                        return new DateValue("");
+                    case DECIMAL:
+                        return new DoubleValue("");
+                    case INT:
+                        return new LongValue("1");
+                }
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+        };
+        
+        PrimitiveValue result = eval.eval(expressionResolver(where));
+        
+    }
+
+    private static Expression expressionResolver(Expression exp) {
+        if (exp instanceof Column) {
+
+            System.out.println(((Column) exp).getTable() + "----" + ((Column) exp).getColumnName());
+            return new Column(((Column) exp).getTable(), ((Column) exp).getColumnName());
+        }
+
+        if (exp instanceof DateValue) {
+            return ((DateValue) exp);
+        }
+        if (exp instanceof DoubleValue) {
+            return ((DoubleValue) exp);
+        }
+        if (exp instanceof NullValue) {
+            return ((NullValue) exp);
+        }
+        if (exp instanceof LongValue) {
+            return ((LongValue) exp);
+        }
+        if (exp instanceof StringValue) {
+            System.out.println("!!!!!!!!sadasdas" + ((StringValue) exp).getValue());
+            return ((StringValue) exp);
+        }
+        if (exp instanceof TimestampValue) {
+            return ((TimestampValue) exp);
+        }
+        if (exp instanceof TimeValue) {
+            return ((TimeValue) exp);
+        }
+
+        if (exp instanceof GreaterThan) {
+            GreaterThan e = (GreaterThan) exp;
+            Expression rightExpression = e.getRightExpression();
+            System.out.println("!!!!!");
+
+            return new GreaterThan(expressionResolver(e.getLeftExpression()), expressionResolver(e.getRightExpression()));
+        }
+        if (exp instanceof Addition) {
+            Addition e = (Addition) exp;
+            System.out.println(e);
+        }
+        if (exp instanceof OrExpression) {
+            OrExpression e = (OrExpression) exp;
+            if (e.getRightExpression() instanceof GreaterThan) {
+                expressionResolver(e.getRightExpression());
+            }
+            System.out.println(e);
+        }
+        return null;
+    }
+
 }

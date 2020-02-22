@@ -48,7 +48,7 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.Top;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class CIS552Project1 {
+public class CIS552Project {
 
     static String dataPath = null;
     static String commandsLoc = null;
@@ -82,7 +82,7 @@ public class CIS552Project1 {
                 }
             }
         } catch (ParseException | FileNotFoundException | SQLException ex) {
-            Logger.getLogger(CIS552Project1.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CIS552Project.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

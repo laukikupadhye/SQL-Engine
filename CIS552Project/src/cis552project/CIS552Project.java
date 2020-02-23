@@ -34,6 +34,7 @@ import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
@@ -56,6 +57,7 @@ public class CIS552Project {
     static Map<String, TableSchema> tables = new HashMap<>();
     static Map<String, String> aliasandTableName = new HashMap<>();
     static Map<String, Integer> colPosWithTableAlias = new HashMap<>();
+
     /**
      * @param args the command line arguments
      */
@@ -76,7 +78,6 @@ public class CIS552Project {
                     if (selectBody instanceof PlainSelect) {
                         PlainSelect plainSelect = (PlainSelect) selectBody;
                         evaluateResult(plainSelect);
-                        
 
                     }
                 } else if (statement instanceof CreateTable) {
@@ -126,42 +127,51 @@ public class CIS552Project {
         List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
         Top top = plainSelect.getTop();
         Expression where = plainSelect.getWhere();
-        System.out.println("Select Items: "+selectItems);
+        System.out.println("Select Items: " + selectItems);
         String tableName = fromItem.toString();
         String aliasName = tableName;
-        
+
         if (fromItem.getAlias() != null) {
             aliasName = fromItem.getAlias();
             tableName = fetchTableNameFromALias(fromItem);
         }
-        addColPosWithTabAlias(tableName,aliasName,colPosWithTableAlias.size());
+        addColPosWithTabAlias(tableName, aliasName, colPosWithTableAlias.size());
         //System.out.println("map size:"+colPosWithTableAlias.size());
-                
+
         //colPosWithTableAlias.put((aliasName+"."+col).toString(), Integer.MIN_VALUE)
         aliasandTableName.put(aliasName, tableName);
-        List<String[]> tempResult=readTable(dataPath + "\\" + tableName + ".dat");
-        
+        //int restPos= 0;
+
+        List<String[]> tempResult = readTable(dataPath + "\\" + tableName + ".dat");
 
         // Reuse index logic and find out how to use it globally in joins as well.
         System.out.println("____" + fromItem.getAlias() + "_____" + fromItem.toString());
         //List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
+        List<String[]> finalResult = new ArrayList<>();
         if (where != null) {
-            applyCondition(tempResult, where);
+            for (String[] eachRow : tempResult) {
+                PrimitiveValue primValue = applyCondition(eachRow, where);
+                if(primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()){
+                    finalResult.add(eachRow);
+                } 
+            }
+
         }
-        
-        printResult(tempResult, selectItems);
+
+        printResult(finalResult, selectItems);
     }
-    private static void addColPosWithTabAlias(String tableName, String aliasName, Integer pos){
-        TableSchema selectTableTemp= tables.get(tableName);
+
+    private static void addColPosWithTabAlias(String tableName, String aliasName, Integer pos) {
+        TableSchema selectTableTemp = tables.get(tableName);
         List<String> colNm = selectTableTemp.getListofColumns();
-        for(String s:colNm){
-            String colTableMap=aliasName+"."+s;
+        for (String s : colNm) {
+            String colTableMap = aliasName + "." + s;
             colPosWithTableAlias.put(colTableMap, pos);
             pos++;
         }
-        System.out.println("Column names with position:"+colPosWithTableAlias);
+        System.out.println("Column names with position:" + colPosWithTableAlias);
     }
-    
+
     private static List<String[]> readTable(String filePath) throws FileNotFoundException {
         File myObj = new File(filePath);
         List<String[]> resultRows = new ArrayList<>();
@@ -191,12 +201,11 @@ public class CIS552Project {
 //            for (int i = 0; i < pos.length; i++) {
 //                finalREsult[i] = result[pos[i]];
 //            }
-
 //            String singleRowResult = "";
 //                for (int i=0; i<selectItems.size();i++) {
 //                    singleRowResult += "|" + result[i] + "|";
 //                }
-            System.out.println(String.join("|", finalREsult));
+            System.out.println(String.join("|", result));
         }
         System.out.println("==================================================================================");
     }
@@ -206,55 +215,58 @@ public class CIS552Project {
         return tableName;
     }
 
-    private static void applyCondition(List<String[]> rowResults, Expression where) throws SQLException {
+    private static PrimitiveValue applyCondition(String[] rowResult, Expression where) throws SQLException {
         Eval eval = new Eval() {
             @Override
             public PrimitiveValue eval(Column column) throws SQLException {
+
+                System.out.println(column.getTable() + "----" + column.getColumnName());
+                int pos = colPosWithTableAlias.get((column.getTable() + "." + column.getColumnName()));
+                String value = rowResult[pos];
                 String tableName = aliasandTableName.get(column.getTable().getName());
                 SQLDataType colSqlDataType = tables.get(tableName).getSQLDataType(column.getColumnName());
                 switch (colSqlDataType) {
                     case CHAR:
                     case VARCHAR:
                     case STRING:
-                        return new StringValue("");
+                        return new StringValue(value);
                     case DATE:
-                        return new DateValue("");
+                        return new DateValue(value);
                     case DECIMAL:
-                        return new DoubleValue("");
+                        return new DoubleValue(value);
                     case INT:
-                        System.out.println("this is from int");
-                        return new LongValue("1");
+                        System.out.println("this is from int:");
+                        System.out.println(new LongValue(value));
+                        return new LongValue(value);
                 }
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
-        
-        PrimitiveValue result = eval.eval(expressionResolver(where,rowResults));
-        
+
+        return eval.eval(expressionResolver(where));
+
     }
 
-    private static Expression expressionResolver(Expression exp, List<String[]> rowResults) {
+    private static Expression expressionResolver(Expression exp) {
         if (exp instanceof Column) {
-
-            System.out.println(((Column) exp).getTable() + "----" + ((Column) exp).getColumnName());
-            int pos= colPosWithTableAlias.get((((Column) exp).getTable() + "." + ((Column) exp).getColumnName()));
-            String tempRes= new String();
-            tempRes=rowResults[pos];
-            Expression colExp= expressionResolver(exp, rowResults[pos]);
-            //return expressionResolver(exp,rowResults);
-            return colExp;
+            System.out.println("Instance of Column :"+expressionResolver(exp));
+            return expressionResolver(exp);
         }
 
         if (exp instanceof DateValue) {
+            System.out.println("Instance of Date Value");
             return ((DateValue) exp);
         }
         if (exp instanceof DoubleValue) {
+            System.out.println("Instance of Double Value");
             return ((DoubleValue) exp);
         }
         if (exp instanceof NullValue) {
+            System.out.println("Instance of Null Value");
             return ((NullValue) exp);
         }
         if (exp instanceof LongValue) {
+            System.out.println("Instance of Long Value");
             return ((LongValue) exp);
         }
         if (exp instanceof StringValue) {
@@ -262,9 +274,11 @@ public class CIS552Project {
             return ((StringValue) exp);
         }
         if (exp instanceof TimestampValue) {
+            System.out.println("Instance of timestamp Value");
             return ((TimestampValue) exp);
         }
         if (exp instanceof TimeValue) {
+            System.out.println("Instance of Time Value");
             return ((TimeValue) exp);
         }
 
@@ -272,9 +286,9 @@ public class CIS552Project {
             GreaterThan e = (GreaterThan) exp;
             Expression rightExpression = e.getRightExpression();
             Expression leftExpression = e.getLeftExpression();
-            System.out.println("!!!!!");
-
-            return new GreaterThan(expressionResolver(e.getLeftExpression(), rowResults), expressionResolver(e.getRightExpression(), rowResults));
+            System.out.println("Left exp: "+e.getLeftExpression());
+            System.out.println("Right exp: "+e.getRightExpression());
+            return new GreaterThan(e.getLeftExpression(),e.getRightExpression() );
         }
         if (exp instanceof Addition) {
             Addition e = (Addition) exp;
@@ -283,7 +297,7 @@ public class CIS552Project {
         if (exp instanceof OrExpression) {
             OrExpression e = (OrExpression) exp;
             if (e.getRightExpression() instanceof GreaterThan) {
-                expressionResolver(e.getRightExpression(), rowResults);
+                expressionResolver(e.getRightExpression());
             }
             System.out.println(e);
         }

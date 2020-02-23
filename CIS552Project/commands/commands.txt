@@ -1,4 +1,4 @@
 CREATE TABLE R (A int, B int);
 SELECT re.A, re.B
 FROM R re
-where re.A>5;
+where re.A>re.B;

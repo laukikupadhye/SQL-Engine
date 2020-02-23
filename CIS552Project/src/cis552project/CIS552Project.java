@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jdk.jfr.Experimental;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -54,7 +55,7 @@ public class CIS552Project {
     static String commandsLoc = null;
     static Map<String, TableSchema> tables = new HashMap<>();
     static Map<String, String> aliasandTableName = new HashMap<>();
-
+    static Map<String, Integer> colPosWithTableAlias = new HashMap<>();
     /**
      * @param args the command line arguments
      */
@@ -75,6 +76,7 @@ public class CIS552Project {
                     if (selectBody instanceof PlainSelect) {
                         PlainSelect plainSelect = (PlainSelect) selectBody;
                         evaluateResult(plainSelect);
+                        
 
                     }
                 } else if (statement instanceof CreateTable) {
@@ -124,24 +126,42 @@ public class CIS552Project {
         List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
         Top top = plainSelect.getTop();
         Expression where = plainSelect.getWhere();
-
+        System.out.println("Select Items: "+selectItems);
         String tableName = fromItem.toString();
         String aliasName = tableName;
+        
         if (fromItem.getAlias() != null) {
             aliasName = fromItem.getAlias();
             tableName = fetchTableNameFromALias(fromItem);
         }
+        addColPosWithTabAlias(tableName,aliasName,colPosWithTableAlias.size());
+        //System.out.println("map size:"+colPosWithTableAlias.size());
+                
+        //colPosWithTableAlias.put((aliasName+"."+col).toString(), Integer.MIN_VALUE)
         aliasandTableName.put(aliasName, tableName);
+        List<String[]> tempResult=readTable(dataPath + "\\" + tableName + ".dat");
+        
 
         // Reuse index logic and find out how to use it globally in joins as well.
         System.out.println("____" + fromItem.getAlias() + "_____" + fromItem.toString());
-        List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
+        //List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
         if (where != null) {
-            applyCondition(rowResults, where);
+            applyCondition(tempResult, where);
         }
-        printResult(rowResults, selectItems);
+        
+        printResult(tempResult, selectItems);
     }
-
+    private static void addColPosWithTabAlias(String tableName, String aliasName, Integer pos){
+        TableSchema selectTableTemp= tables.get(tableName);
+        List<String> colNm = selectTableTemp.getListofColumns();
+        for(String s:colNm){
+            String colTableMap=aliasName+"."+s;
+            colPosWithTableAlias.put(colTableMap, pos);
+            pos++;
+        }
+        System.out.println("Column names with position:"+colPosWithTableAlias);
+    }
+    
     private static List<String[]> readTable(String filePath) throws FileNotFoundException {
         File myObj = new File(filePath);
         List<String[]> resultRows = new ArrayList<>();
@@ -149,7 +169,7 @@ public class CIS552Project {
             while (myReader.hasNext()) {
                 String dataRow = myReader.next();
                 resultRows.add(dataRow.split("\\|"));
-                Pair<String, String> key = null;
+                //Pair<String, String> key = null;
             }
         }
         return resultRows;
@@ -202,21 +222,27 @@ public class CIS552Project {
                     case DECIMAL:
                         return new DoubleValue("");
                     case INT:
+                        System.out.println("this is from int");
                         return new LongValue("1");
                 }
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
         };
         
-        PrimitiveValue result = eval.eval(expressionResolver(where));
+        PrimitiveValue result = eval.eval(expressionResolver(where,rowResults));
         
     }
 
-    private static Expression expressionResolver(Expression exp) {
+    private static Expression expressionResolver(Expression exp, List<String[]> rowResults) {
         if (exp instanceof Column) {
 
             System.out.println(((Column) exp).getTable() + "----" + ((Column) exp).getColumnName());
-            return new Column(((Column) exp).getTable(), ((Column) exp).getColumnName());
+            int pos= colPosWithTableAlias.get((((Column) exp).getTable() + "." + ((Column) exp).getColumnName()));
+            String tempRes= new String();
+            tempRes=rowResults[pos];
+            Expression colExp= expressionResolver(exp, rowResults[pos]);
+            //return expressionResolver(exp,rowResults);
+            return colExp;
         }
 
         if (exp instanceof DateValue) {
@@ -245,9 +271,10 @@ public class CIS552Project {
         if (exp instanceof GreaterThan) {
             GreaterThan e = (GreaterThan) exp;
             Expression rightExpression = e.getRightExpression();
+            Expression leftExpression = e.getLeftExpression();
             System.out.println("!!!!!");
 
-            return new GreaterThan(expressionResolver(e.getLeftExpression()), expressionResolver(e.getRightExpression()));
+            return new GreaterThan(expressionResolver(e.getLeftExpression(), rowResults), expressionResolver(e.getRightExpression(), rowResults));
         }
         if (exp instanceof Addition) {
             Addition e = (Addition) exp;
@@ -256,7 +283,7 @@ public class CIS552Project {
         if (exp instanceof OrExpression) {
             OrExpression e = (OrExpression) exp;
             if (e.getRightExpression() instanceof GreaterThan) {
-                expressionResolver(e.getRightExpression());
+                expressionResolver(e.getRightExpression(), rowResults);
             }
             System.out.println(e);
         }

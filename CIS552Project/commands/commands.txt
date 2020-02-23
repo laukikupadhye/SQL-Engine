@@ -1,3 +1,4 @@
 CREATE TABLE R (A int, B int);
-SELECT re.A
-FROM R re WHERE (re.A > 1);
+SELECT re.A, re.B
+FROM R re
+where re.A>5;

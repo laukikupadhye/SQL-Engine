@@ -1,4 +1,5 @@
 CREATE TABLE R (A int, B int);
-SELECT re.A, re.B
-FROM R re
-where re.A>re.B;
+CREATE TABLE S (A int, B int);
+
+SELECT re.A, re.B, se.B, se.A
+FROM R re, S se;

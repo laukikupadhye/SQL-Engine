@@ -1,5 +1,7 @@
 CREATE TABLE R (A int, B int);
 CREATE TABLE S (A int, B int);
 
-SELECT re.A, re.B, se.B, se.A
-FROM R re, S se;
+SELECT re.A, re.B, re.A+re.B
+FROM R re;
+
+SELECT Q.B FROM (SELECT A, B FROM R) Q;

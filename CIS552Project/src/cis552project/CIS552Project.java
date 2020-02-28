@@ -15,22 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import jdk.jfr.Experimental;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.TimeValue;
-import net.sf.jsqlparser.expression.TimestampValue;
-import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
-import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
-import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.InExpression;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
@@ -38,302 +30,240 @@ import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.select.Distinct;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
-import net.sf.jsqlparser.statement.select.Limit;
-import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.statement.select.Top;
+import net.sf.jsqlparser.statement.select.SubSelect;
 
 public class CIS552Project {
 
-    static String dataPath = null;
-    static String commandsLoc = null;
-    static Map<String, TableSchema> tables = new HashMap<>();
-    static Map<String, String> aliasandTableName = new HashMap<>();
-    static Map<String, Integer> colPosWithTableAlias = new HashMap<>();
+	static String dataPath = null;
+	static String commandsLoc = null;
+	static Map<String, TableSchema> tables = new HashMap<>();
+	static Map<String, String> aliasandTableName = new HashMap<>();
+	static Map<String, Integer> colPosWithTableAlias = new HashMap<>();
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        dataPath = args[0];
-        commandsLoc = args[1];
+	/**
+	 * @param args the command line arguments
+	 */
+	public static void main(String[] args) {
+		commandsLoc = args[0];
+		dataPath = args[1];
 
-        try {
-            List<String> commands = readCommands(commandsLoc);
-            commands.stream().forEach(System.out::println);
-            for (String command : commands) {
-                Reader reader = new StringReader(command);
-                CCJSqlParser parser = new CCJSqlParser(reader);
-                Statement statement = parser.Statement();
-                if (statement instanceof Select) {
-                    Select select = (Select) statement;
-                    SelectBody selectBody = select.getSelectBody();
-                    if (selectBody instanceof PlainSelect) {
-                        PlainSelect plainSelect = (PlainSelect) selectBody;
-                        evaluateResult(plainSelect);
+		try {
+			List<String> commands = readCommands(commandsLoc);
+			for (String command : commands) {
+				Reader reader = new StringReader(command);
+				CCJSqlParser parser = new CCJSqlParser(reader);
+				try {
+					Statement statement = parser.Statement();
+					if (statement instanceof Select) {
+						Select select = (Select) statement;
+						SelectBody selectBody = select.getSelectBody();
+						Object[] resultArray = selectEvaluation(selectBody);
+						List<String[]> finalResult = (List<String[]>) resultArray[0];
+						List<SelectItem> selectItems = (List<SelectItem>) resultArray[1];
+						// printResult(finalResult, selectItems);
+					} else if (statement instanceof CreateTable) {
+						createTable(statement);
+					}
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println("Commands location was not identified. Please see the below exception.");
+			System.out.println("Exception : " + e.getLocalizedMessage());
+			e.printStackTrace();
+		}
 
-                    }
-                } else if (statement instanceof CreateTable) {
-                    createTable(statement);
-                }
-            }
-        } catch (ParseException | FileNotFoundException | SQLException ex) {
-            Logger.getLogger(CIS552Project.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+	}
 
-    private static List<String> readCommands(String filePath) throws FileNotFoundException {
-        List<String> commandsList = new ArrayList<>();
-        try ( Scanner myReader = new Scanner(new File(filePath))) {
-            String previousString = "";
-            while (myReader.hasNext()) {
-                String statement = myReader.next();
-                if (!statement.endsWith(";")) {
-                    previousString += " " + statement;
-                    continue;
-                } else {
-                    statement = previousString + " " + statement;
-                    previousString = "";
-                }
-                commandsList.add(statement);
-            }
-        }
-        return commandsList;
-    }
+	private static Object[] selectEvaluation(SelectBody selectBody) throws FileNotFoundException {
+		List<String[]> finalResult = new ArrayList<>();
+		List<SelectItem> selectItems = new ArrayList<>();
+		if (selectBody instanceof PlainSelect) {
+			PlainSelect plainSelect = (PlainSelect) selectBody;
+			try {
+				finalResult = evaluateResult(plainSelect);
 
-    private static void createTable(Statement statement) {
-        CreateTable createTable = (CreateTable) statement;
-        String tableName = createTable.getTable().getName();
-        TableSchema tableScehma = new TableSchema(tableName, createTable.getColumnDefinitions());
-        tables.put(tableName, tableScehma);
-    }
+				selectItems = plainSelect.getSelectItems();
 
-    private static void evaluateResult(PlainSelect plainSelect) throws FileNotFoundException, SQLException {
-        List<SelectItem> selectItems = plainSelect.getSelectItems();
-        List<Join> joins = plainSelect.getJoins();
-        System.out.println("Joins:"+joins);
-        FromItem fromItem = plainSelect.getFromItem();
-        Distinct distinct = plainSelect.getDistinct();
-        List<Column> groupByColumnReferences = plainSelect.getGroupByColumnReferences();
-        Expression having = plainSelect.getHaving();
-        Table into = plainSelect.getInto();
-        Limit limit = plainSelect.getLimit();
-        List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
-        Top top = plainSelect.getTop();
-        Expression where = plainSelect.getWhere();
-        System.out.println("Select Items: " + selectItems);
-        String tableName = fromItem.toString();
-        String aliasName = tableName;
+			} catch (SQLException e) {
+				System.out.println("Error Occured while parsing the statements.");
+				System.out.println("Statement : " + plainSelect.toString());
+				e.printStackTrace();
+			}
+		}
+		Object[] result = { finalResult, selectItems };
+		return result;
+	}
 
-        if (fromItem.getAlias() != null) {
-            aliasName = fromItem.getAlias();
-            tableName = fetchTableNameFromALias(fromItem);
-        }
-        addColPosWithTabAlias(tableName, aliasName, colPosWithTableAlias.size());
-        aliasandTableName.put(aliasName, tableName);
-        
-        
-        List<String[]> tempResult = readTable(dataPath + "\\" + tableName + ".dat");
-        if (joins != null) {
-            for (Join join : joins) {
-                String joinTableName = fromItem.toString();
-                String joinAliasName = tableName;
+	private static List<String> readCommands(String filePath) throws FileNotFoundException {
+		List<String> commandsList = new ArrayList<>();
+		try (Scanner myReader = new Scanner(new File(filePath))) {
+			String previousString = "";
+			while (myReader.hasNext()) {
+				String statement = myReader.next();
+				if (!statement.endsWith(";")) {
+					previousString += " " + statement;
+					continue;
+				} else {
+					statement = previousString + " " + statement;
+					previousString = "";
+				}
+				commandsList.add(statement);
+			}
+		}
+		return commandsList;
+	}
 
-                if (join.getRightItem().getAlias() != null) {
-                    joinAliasName = join.getRightItem().getAlias();
-                    joinTableName = fetchTableNameFromALias(join.getRightItem());
-                }
-                addColPosWithTabAlias(joinTableName, joinAliasName, colPosWithTableAlias.size());
-                aliasandTableName.put(joinAliasName, joinTableName);
-                List<String[]> tempJoinResult = readTable(dataPath + "\\" + joinTableName + ".dat");
-                List<String[]> tempJoined = new ArrayList();
-                for (String[] fromRes : tempResult) {
-                    for (String[] joinRes : tempJoinResult) {
-                        String [] joined = combine(fromRes, joinRes);
-                        tempJoined.add(joined);
-                    }
-                }
-                tempResult = tempJoined;
-            }
-            
-        }
-        //System.out.println("map size:"+colPosWithTableAlias.size());
+	private static void createTable(Statement statement) {
+		CreateTable createTable = (CreateTable) statement;
+		String tableName = createTable.getTable().getName();
+		TableSchema tableScehma = new TableSchema(tableName, createTable.getColumnDefinitions());
+		tables.put(tableName, tableScehma);
+	}
 
-        //colPosWithTableAlias.put((aliasName+"."+col).toString(), Integer.MIN_VALUE)
-        
-        //int restPos= 0;
+	private static List<String[]> evaluateResult(PlainSelect plainSelect) throws FileNotFoundException, SQLException {
+		List<Join> joins = plainSelect.getJoins();
+		FromItem fromItem = plainSelect.getFromItem();
 
-        // Reuse index logic and find out how to use it globally in joins as well.
-        System.out.println("____" + fromItem.getAlias() + "_____" + fromItem.toString());
-        //List<String[]> rowResults = readTable(dataPath + "\\" + tableName + ".dat");
-        List<String[]> finalResult = new ArrayList<>();
-        System.out.println("Wherer Conditon: "+where);
-        if (where != null) {
-            for (String[] eachRow : tempResult) {
-                PrimitiveValue primValue = applyCondition(eachRow, where);
-                if(primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()){
-                    finalResult.add(eachRow);
-                } 
-            }
+		Expression where = plainSelect.getWhere();
+		String tableName = fromItem.toString();
+		String aliasName = tableName;
+		
+		if (fromItem instanceof SubSelect) {
+			Object[] objectResult = selectEvaluation(((SubSelect) fromItem).getSelectBody());
+			List<String[]> finalResult = (List<String[]>) objectResult[0];
+			List<SelectItem> selectItems = (List<SelectItem>) objectResult[1];
+		}
+		if (fromItem instanceof Table) {
+			if (fromItem.getAlias() != null) {
+				if (fromItem instanceof Table) {
+					tableName = fetchTableNameFromALias(fromItem);
+				}
+			}
+		}
+		System.out.println("plainSelect - " + plainSelect);
+		
+		addColPosWithTabAlias(tableName, aliasName, colPosWithTableAlias.size());
+		aliasandTableName.put(aliasName, tableName);
 
-        }else{
-            finalResult=tempResult;
-        }
+		List<String[]> tempResult = CIS552ProjectUtils.readTable(dataPath + "\\" + tableName + ".dat");
+		if (joins != null) {
+			for (Join join : joins) {
+				String joinTableName = fromItem.toString();
+				String joinAliasName = tableName;
 
-        printResult(finalResult, selectItems);
-    }
+				if (join.getRightItem().getAlias() != null) {
+					joinAliasName = join.getRightItem().getAlias();
+					joinTableName = fetchTableNameFromALias(join.getRightItem());
+				}
+				addColPosWithTabAlias(joinTableName, joinAliasName, colPosWithTableAlias.size());
+				aliasandTableName.put(joinAliasName, joinTableName);
+				List<String[]> tempJoinResult = CIS552ProjectUtils.readTable(dataPath + "\\" + joinTableName + ".dat");
+				List<String[]> tempJoined = new ArrayList<>();
+				for (String[] fromRes : tempResult) {
+					for (String[] joinRes : tempJoinResult) {
+						String[] joined = CIS552ProjectUtils.combineArrays(fromRes, joinRes);
+						tempJoined.add(joined);
+					}
+				}
+				tempResult = tempJoined;
+			}
 
-    private static void addColPosWithTabAlias(String tableName, String aliasName, Integer pos) {
-        TableSchema selectTableTemp = tables.get(tableName);
-        List<String> colNm = selectTableTemp.getListofColumns();
-        for (String s : colNm) {
-            String colTableMap = aliasName + "." + s;
-            colPosWithTableAlias.put(colTableMap, pos);
-            pos++;
-        }
-        System.out.println("Column names with position:" + colPosWithTableAlias);
-    }
+		}
+		List<String[]> finalResult = new ArrayList<>();
+		if (where != null) {
+			for (String[] eachRow : tempResult) {
+				PrimitiveValue primValue = applyCondition(eachRow, where);
+				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
+					finalResult.add(eachRow);
+				}
+			}
 
-    private static List<String[]> readTable(String filePath) throws FileNotFoundException {
-        File myObj = new File(filePath);
-        List<String[]> resultRows = new ArrayList<>();
-        try ( Scanner myReader = new Scanner(myObj)) {
-            while (myReader.hasNext()) {
-                String dataRow = myReader.next();
-                resultRows.add(dataRow.split("\\|"));
-                //Pair<String, String> key = null;
-            }
-        }
-        return resultRows;
-    }
+		} else {
+			finalResult = tempResult;
+		}
+		return finalResult;
+	}
 
-    private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems) {
+	private static void addColPosWithTabAlias(String tableName, String aliasName, Integer pos) {
+		TableSchema selectTableTemp = tables.get(tableName);
+		List<String> colNm = selectTableTemp.getListofColumns();
+		for (String s : colNm) {
+			String colTableMap = aliasName + "." + s;
+			colPosWithTableAlias.put(colTableMap, pos);
+			pos++;
+		}
+	}
 
-        System.out.println("Result :");
-        String[] finalREsult = new String[selectItems.size()];
-        Integer[] pos = new Integer[selectItems.size()];
-        for (int i = 0; i < selectItems.size(); i++) {
-            String selectALiasName = selectItems.get(i).toString().substring(0, selectItems.get(i).toString().indexOf("."));
-            String selectColumnName = selectItems.get(i).toString().substring(selectItems.get(i).toString().indexOf(".") + 1, selectItems.get(i).toString().length());
-            String tableNAme = aliasandTableName.get(selectALiasName);
-            pos[i]=colPosWithTableAlias.get(selectItems.get(i).toString());
-        }
-        System.out.println("==================================================================================");
-        for(String[] result : rowsResult) {
+	private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems) throws SQLException {
+		for (String[] result : rowsResult) {
+			for (SelectItem selectItem : selectItems) {
+				System.out.print(applyCondition(result, ((SelectExpressionItem) selectItem).getExpression()));
+				if (selectItems.indexOf(selectItem) < selectItems.size() - 1) {
+					System.out.print("|");
+				}
+			}
+			System.out.println("");
+		}
+		System.out.println("=");
+	}
 
-            for (int i = 0; i < pos.length; i++) {
-                finalREsult[i] = result[pos[i]];
-            }
-            System.out.println(String.join("|", finalREsult));
-        }
-        
-    }
+	private static String fetchTableNameFromALias(FromItem fromItem) {
+		System.out.println("fromItem - " + fromItem);
+		String tableName = fromItem.toString().substring(0, fromItem.toString().indexOf(" AS "));
+		return tableName;
+	}
 
-    private static String fetchTableNameFromALias(FromItem fromItem) {
-        String tableName = fromItem.toString().substring(0, fromItem.toString().indexOf(" AS "));
-        return tableName;
-    }
+	private static PrimitiveValue applyCondition(String[] rowResult, Expression where) throws SQLException {
+		Eval eval = new Eval() {
+			@Override
+			public PrimitiveValue eval(Column column) throws SQLException {
+				System.out.println("(column.getTable() + \".\" + column.getColumnName())"
+						+ (column.getTable() + "." + column.getColumnName()));
+				int pos = colPosWithTableAlias.get((column.getTable() + "." + column.getColumnName()));
+				String value = rowResult[pos];
+				System.out.println("column.getTable().getName() - " + column.getTable().getName());
+				String tableName = aliasandTableName.get(column.getTable().getName());
+				SQLDataType colSqlDataType = tables.get(tableName).getSQLDataType(column.getColumnName());
+				switch (colSqlDataType) {
+				case CHAR:
+				case VARCHAR:
+				case STRING:
+					return new StringValue(value);
+				case DATE:
+					return new DateValue(value);
+				case DECIMAL:
+					return new DoubleValue(value);
+				case INT:
+					return new LongValue(value);
+				}
+				throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods,
+																				// choose Tools | Templates.
+			}
 
-    private static PrimitiveValue applyCondition(String[] rowResult, Expression where) throws SQLException {
-        Eval eval = new Eval() {
-            @Override
-            public PrimitiveValue eval(Column column) throws SQLException {
+		};
+		return eval.eval(expressionResolver(where));
 
-                System.out.println(column.getTable() + "----" + column.getColumnName());
-                int pos = colPosWithTableAlias.get((column.getTable() + "." + column.getColumnName()));
-                String value = rowResult[pos];
-                String tableName = aliasandTableName.get(column.getTable().getName());
-                SQLDataType colSqlDataType = tables.get(tableName).getSQLDataType(column.getColumnName());
-                switch (colSqlDataType) {
-                    case CHAR:
-                    case VARCHAR:
-                    case STRING:
-                        return new StringValue(value);
-                    case DATE:
-                        return new DateValue(value);
-                    case DECIMAL:
-                        return new DoubleValue(value);
-                    case INT:
-                        System.out.println("this is from int:");
-                        System.out.println(new LongValue(value));
-                        return new LongValue(value);
-                }
-                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
-        };
+	}
 
-        return eval.eval(where);
+	private static Expression expressionResolver(Expression exp) {
+		if (exp instanceof InExpression) {
 
-    }
+			if (((InExpression) exp).getItemsList() instanceof SubSelect) {
+				expressionResolver(new InExpression(((InExpression) exp).getLeftExpression(),
+						((InExpression) exp).getItemsList()));
+			}
+		}
+		return exp;
+	}
 
-//    private static Expression expressionResolver(Expression exp) {
-//        if (exp instanceof Column) {
-//            System.out.println("Instance of Column :"+expressionResolver(exp));
-//            return expressionResolver(exp);
-//        }
-//
-//        if (exp instanceof DateValue) {
-//            System.out.println("Instance of Date Value");
-//            return ((DateValue) exp);
-//        }
-//        if (exp instanceof DoubleValue) {
-//            System.out.println("Instance of Double Value");
-//            return ((DoubleValue) exp);
-//        }
-//        if (exp instanceof NullValue) {
-//            System.out.println("Instance of Null Value");
-//            return ((NullValue) exp);
-//        }
-//        if (exp instanceof LongValue) {
-//            System.out.println("Instance of Long Value");
-//            return ((LongValue) exp);
-//        }
-//        if (exp instanceof StringValue) {
-//            System.out.println("!!!!!!!!sadasdas" + ((StringValue) exp).getValue());
-//            return ((StringValue) exp);
-//        }
-//        if (exp instanceof TimestampValue) {
-//            System.out.println("Instance of timestamp Value");
-//            return ((TimestampValue) exp);
-//        }
-//        if (exp instanceof TimeValue) {
-//            System.out.println("Instance of Time Value");
-//            return ((TimeValue) exp);
-//        }
-//
-//        if (exp instanceof GreaterThan) {
-//            GreaterThan e = (GreaterThan) exp;
-//            Expression rightExpression = e.getRightExpression();
-//            Expression leftExpression = e.getLeftExpression();
-//            System.out.println("Left exp: "+e.getLeftExpression());
-//            System.out.println("Right exp: "+e.getRightExpression());
-//            return new GreaterThan(e.getLeftExpression(),e.getRightExpression() );
-//        }
-//        if (exp instanceof Addition) {
-//            Addition e = (Addition) exp;
-//            System.out.println(e);
-//        }
-//        if (exp instanceof OrExpression) {
-//            OrExpression e = (OrExpression) exp;
-//            if (e.getRightExpression() instanceof GreaterThan) {
-//                expressionResolver(e.getRightExpression());
-//            }
-//            System.out.println(e);
-//        }
-//        return null;
-//    }
-
-    public static String[] combine(String[] a, String[] b){
-        int length = a.length + b.length;
-        String[] result = new String[length];
-        System.arraycopy(a, 0, result, 0, a.length);
-        System.arraycopy(b, 0, result, a.length, b.length);
-        return result;
-    }
 }

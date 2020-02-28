@@ -67,14 +67,20 @@ public class CIS552Project {
 						Object[] resultArray = selectEvaluation(selectBody);
 						List<String[]> finalResult = (List<String[]>) resultArray[0];
 						List<SelectItem> selectItems = (List<SelectItem>) resultArray[1];
-						// printResult(finalResult, selectItems);
+						printResult(finalResult, selectItems);
 					} else if (statement instanceof CreateTable) {
 						createTable(statement);
 					}
 				} catch (ParseException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+
+				aliasandTableName.clear();
+				colPosWithTableAlias.clear();
 			}
 		} catch (FileNotFoundException e) {
 			System.out.println("Commands location was not identified. Please see the below exception.");
@@ -147,19 +153,21 @@ public class CIS552Project {
 			if (fromItem.getAlias() != null) {
 				if (fromItem instanceof Table) {
 					tableName = fetchTableNameFromALias(fromItem);
+					aliasName = fromItem.getAlias();
 				}
 			}
 		}
 		System.out.println("plainSelect - " + plainSelect);
-		
+		System.out.println("colPosWithTableAlias - ");
+		colPosWithTableAlias.entrySet().forEach(System.out::println);
 		addColPosWithTabAlias(tableName, aliasName, colPosWithTableAlias.size());
 		aliasandTableName.put(aliasName, tableName);
 
 		List<String[]> tempResult = CIS552ProjectUtils.readTable(dataPath + "\\" + tableName + ".dat");
 		if (joins != null) {
 			for (Join join : joins) {
-				String joinTableName = fromItem.toString();
-				String joinAliasName = tableName;
+				String joinTableName = join.toString();
+				String joinAliasName = joinTableName;
 
 				if (join.getRightItem().getAlias() != null) {
 					joinAliasName = join.getRightItem().getAlias();
@@ -199,6 +207,7 @@ public class CIS552Project {
 		List<String> colNm = selectTableTemp.getListofColumns();
 		for (String s : colNm) {
 			String colTableMap = aliasName + "." + s;
+			System.out.println("colTableMap - "+ colTableMap);
 			colPosWithTableAlias.put(colTableMap, pos);
 			pos++;
 		}
@@ -229,6 +238,8 @@ public class CIS552Project {
 			public PrimitiveValue eval(Column column) throws SQLException {
 				System.out.println("(column.getTable() + \".\" + column.getColumnName())"
 						+ (column.getTable() + "." + column.getColumnName()));
+				System.out.println("colPosWithTableAlias eval - ");
+				colPosWithTableAlias.entrySet().forEach(System.out::println);
 				int pos = colPosWithTableAlias.get((column.getTable() + "." + column.getColumnName()));
 				String value = rowResult[pos];
 				System.out.println("column.getTable().getName() - " + column.getTable().getName());

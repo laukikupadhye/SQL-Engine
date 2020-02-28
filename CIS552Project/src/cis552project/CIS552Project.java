@@ -67,13 +67,11 @@ public class CIS552Project {
 						Object[] resultArray = selectEvaluation(selectBody);
 						List<String[]> finalResult = (List<String[]>) resultArray[0];
 						List<SelectItem> selectItems = (List<SelectItem>) resultArray[1];
-						printResult(finalResult, selectItems);
+						List<FromItem> fromItems = (List<FromItem>) resultArray[3];
+						printResult(finalResult, selectItems, fromItems);
 					} else if (statement instanceof CreateTable) {
 						createTable(statement);
 					}
-				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -93,6 +91,7 @@ public class CIS552Project {
 	private static Object[] selectEvaluation(SelectBody selectBody) throws FileNotFoundException {
 		List<String[]> finalResult = new ArrayList<>();
 		List<SelectItem> selectItems = new ArrayList<>();
+		List<FromItem> fromItems = new ArrayList<>();
 		if (selectBody instanceof PlainSelect) {
 			PlainSelect plainSelect = (PlainSelect) selectBody;
 			try {
@@ -100,13 +99,19 @@ public class CIS552Project {
 
 				selectItems = plainSelect.getSelectItems();
 
+				fromItems.add(plainSelect.getFromItem());
+				plainSelect.getJoins().forEach(x -> {
+					fromItems.add(x.getRightItem());
+				});
+				;
+
 			} catch (SQLException e) {
 				System.out.println("Error Occured while parsing the statements.");
 				System.out.println("Statement : " + plainSelect.toString());
 				e.printStackTrace();
 			}
 		}
-		Object[] result = { finalResult, selectItems };
+		Object[] result = { finalResult, selectItems, fromItems };
 		return result;
 	}
 
@@ -139,15 +144,16 @@ public class CIS552Project {
 	private static List<String[]> evaluateResult(PlainSelect plainSelect) throws FileNotFoundException, SQLException {
 		List<Join> joins = plainSelect.getJoins();
 		FromItem fromItem = plainSelect.getFromItem();
-
+		List<FromItem> fromItemList = new ArrayList<>();
 		Expression where = plainSelect.getWhere();
 		String tableName = fromItem.toString();
 		String aliasName = tableName;
-		
+
 		if (fromItem instanceof SubSelect) {
 			Object[] objectResult = selectEvaluation(((SubSelect) fromItem).getSelectBody());
 			List<String[]> finalResult = (List<String[]>) objectResult[0];
 			List<SelectItem> selectItems = (List<SelectItem>) objectResult[1];
+			List<FromItem> fromItems = (List<FromItem>) objectResult[3];
 		}
 		if (fromItem instanceof Table) {
 			if (fromItem.getAlias() != null) {
@@ -190,7 +196,7 @@ public class CIS552Project {
 		List<String[]> finalResult = new ArrayList<>();
 		if (where != null) {
 			for (String[] eachRow : tempResult) {
-				PrimitiveValue primValue = applyCondition(eachRow, where);
+				PrimitiveValue primValue = applyCondition(eachRow, where,fromItemList);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 					finalResult.add(eachRow);
 				}
@@ -207,16 +213,16 @@ public class CIS552Project {
 		List<String> colNm = selectTableTemp.getListofColumns();
 		for (String s : colNm) {
 			String colTableMap = aliasName + "." + s;
-			System.out.println("colTableMap - "+ colTableMap);
+			System.out.println("colTableMap - " + colTableMap);
 			colPosWithTableAlias.put(colTableMap, pos);
 			pos++;
 		}
 	}
 
-	private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems) throws SQLException {
+	private static void printResult(List<String[]> rowsResult, List<SelectItem> selectItems, List<FromItem> fromItems) throws SQLException {
 		for (String[] result : rowsResult) {
 			for (SelectItem selectItem : selectItems) {
-				System.out.print(applyCondition(result, ((SelectExpressionItem) selectItem).getExpression()));
+				System.out.print(applyCondition(result, ((SelectExpressionItem) selectItem).getExpression(),fromItems));
 				if (selectItems.indexOf(selectItem) < selectItems.size() - 1) {
 					System.out.print("|");
 				}
@@ -232,18 +238,19 @@ public class CIS552Project {
 		return tableName;
 	}
 
-	private static PrimitiveValue applyCondition(String[] rowResult, Expression where) throws SQLException {
+	private static PrimitiveValue applyCondition(String[] rowResult, Expression where, List<FromItem> fromItems) throws SQLException {
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column column) throws SQLException {
-				System.out.println("(column.getTable() + \".\" + column.getColumnName())"
-						+ (column.getTable() + "." + column.getColumnName()));
-				System.out.println("colPosWithTableAlias eval - ");
-				colPosWithTableAlias.entrySet().forEach(System.out::println);
-				int pos = colPosWithTableAlias.get((column.getTable() + "." + column.getColumnName()));
+				String aliasTableName = column.getTable().getName();
+				String wholeColumnName = column.getWholeColumnName();
+				if(aliasTableName == null) {
+					aliasTableName = getTableNamefromFromItems(fromItems);
+				}
+				int pos = colPosWithTableAlias.get(wholeColumnName);
 				String value = rowResult[pos];
 				System.out.println("column.getTable().getName() - " + column.getTable().getName());
-				String tableName = aliasandTableName.get(column.getTable().getName());
+				String tableName = aliasandTableName.get(aliasTableName);
 				SQLDataType colSqlDataType = tables.get(tableName).getSQLDataType(column.getColumnName());
 				switch (colSqlDataType) {
 				case CHAR:
@@ -264,6 +271,15 @@ public class CIS552Project {
 		};
 		return eval.eval(expressionResolver(where));
 
+	}
+
+	protected static String getTableNamefromFromItems(List<FromItem> fromItems) {
+		
+		for (FromItem fromItem : fromItems) {
+			
+		}
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private static Expression expressionResolver(Expression exp) {

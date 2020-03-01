@@ -35,13 +35,13 @@ public class TableSchema {
     public List<String> getListofColumns() {
         return colList;
     }
-
+    
     public int getColPosition(String colName) {
         return colPosition.get(colName);
     }
     
-    public SQLDataType getSQLDataType(String colName) { 
-        return SQLDataType.valueOf(colDefMap.get(colName).getColDataType().getDataType().toUpperCase());
+    public ColumnDefinition getColumnDefinition(String colName) { 
+        return colDefMap.get(colName);
     }
 
 }

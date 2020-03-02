@@ -25,6 +25,7 @@ import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -32,9 +33,7 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
 import net.sf.jsqlparser.expression.operators.arithmetic.Division;
 import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
-import net.sf.jsqlparser.expression.operators.relational.InExpression;
 import net.sf.jsqlparser.parser.CCJSqlParser;
-import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
@@ -52,6 +51,7 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.select.Union;
 
 public class CIS552Project {
 
@@ -108,6 +108,20 @@ public class CIS552Project {
 				System.out.println("Statement : " + plainSelect.toString());
 				e.printStackTrace();
 			}
+		}
+		if (selectBody instanceof Union) {
+			Union union = (Union) selectBody;
+				union.getPlainSelects().forEach(plainSelect ->{
+					try {
+						pvalResult.addAll(evaluateResult(plainSelect));
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				});
 		}
 		return pvalResult;
 	}
@@ -327,6 +341,18 @@ public class CIS552Project {
 		List<Expression> finalExpItemList = new ArrayList<>();
 		for (SelectItem selectItem : selectItems) {
 			if (selectItem instanceof SelectExpressionItem) {
+                if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
+                    Function funExp = (Function) ((SelectExpressionItem) selectItem).getExpression();
+                    String funName = funExp.getName();
+                    switch (funName) {
+                        case "count":
+                            if (funExp.isAllColumns()) {
+                                finalResult.add(new String[]{Integer.toString(rowsResult.size())});
+                                return finalResult;
+                            }
+                    }
+
+                }
 				finalExpItemList.add(((SelectExpressionItem) selectItem).getExpression());
 			} else if (selectItem instanceof AllTableColumns) {
 				AllTableColumns allTableColumn = (AllTableColumns) selectItem;

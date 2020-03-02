@@ -12,10 +12,12 @@ import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
+import net.sf.jsqlparser.statement.select.Distinct;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -217,9 +220,30 @@ public class CIS552Project {
 				fromItems.add(x.getRightItem());
 			});
 		}
-		List<String[]> pvalResult = solveSelectItemExpression(finalResult, selectItems, fromItems, aliasandTableName,
+		finalResult = solveSelectItemExpression(finalResult, selectItems, fromItems, aliasandTableName,
 				colPosWithTableAlias);
-		return pvalResult;
+		Distinct distinct = plainSelect.getDistinct();
+		if (distinct != null) {
+			finalResult = applyDistinct(finalResult, distinct);
+		}
+		return finalResult;
+	}
+
+	private static List<String[]> applyDistinct(List<String[]> initialResult, Distinct distinct) {
+		List<String[]> finalResultList = new ArrayList<>();
+		firstLoop: for (String[] result : initialResult) {
+			secondLoop:for (String[] finalResult : finalResultList) {
+				for (int i = 0; i < finalResult.length; i++) {
+					if (!result[i].equals(finalResult[i])) {
+						continue secondLoop;
+					}
+				}
+					continue firstLoop;
+			}
+			finalResultList.add(result);
+		}
+
+		return finalResultList;
 	}
 
 	private static void copyTableSchemaForAlias(List<SelectItem> selectItems, List<FromItem> fromItems,
@@ -353,7 +377,6 @@ public class CIS552Project {
 					colDef = getColDefFromFromItems(column, fromItems);
 				} else {
 					String tableName = aliasandTableName.get(aliasTableName);
-					System.out.println("column -- " + column);
 					colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
 				}
 				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());

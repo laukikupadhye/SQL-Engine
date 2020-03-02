@@ -343,7 +343,7 @@ public class CIS552Project {
 					Function funExp = (Function) ((SelectExpressionItem) selectItem).getExpression();
 					String funName = funExp.getName().toUpperCase();
 					switch (funName) {
-					case "count":
+					case "COUNT":
 						if (funExp.isAllColumns()) {
 							finalResult.add(new String[] { Integer.toString(rowsResult.size()) });
 							return finalResult;

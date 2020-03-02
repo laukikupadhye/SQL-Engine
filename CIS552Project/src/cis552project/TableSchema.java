@@ -9,13 +9,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
 public class TableSchema {
 
     private String tableName = "";
     private List<ColumnDefinition> colDefList =  new ArrayList<>();
-    private List<String> colList =  new ArrayList<>();
+    private List<Column> colList =  new ArrayList<>();
     private Map<String, Integer> colPosition = new HashMap<>();
     private Map<String, ColumnDefinition> colDefMap = new HashMap<>();
 
@@ -24,15 +27,16 @@ public class TableSchema {
         this.colDefList = colDefList;
         int pos = 0;
         for (ColumnDefinition colDef : colDefList) {
-            String colName = colDef.getColumnName();
-            colList.add(colName);
-            colPosition.put(colName, pos);
-            colDefMap.put(colName,colDef);
+        	String columnName = colDef.getColumnName();
+        	Column column = new Column(new Table(tableName), columnName);
+            colList.add(column);
+            colPosition.put(columnName, pos);
+            colDefMap.put(columnName,colDef);
             pos++;
         }
     }
 
-    public List<String> getListofColumns() {
+    public List<Column> getListofColumns() {
         return colList;
     }
     

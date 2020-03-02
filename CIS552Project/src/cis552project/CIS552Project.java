@@ -341,7 +341,7 @@ public class CIS552Project {
 			if (selectItem instanceof SelectExpressionItem) {
 				if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
 					Function funExp = (Function) ((SelectExpressionItem) selectItem).getExpression();
-					String funName = funExp.getName();
+					String funName = funExp.getName().toUpperCase();
 					switch (funName) {
 					case "count":
 						if (funExp.isAllColumns()) {

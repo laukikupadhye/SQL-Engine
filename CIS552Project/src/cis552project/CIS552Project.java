@@ -111,17 +111,17 @@ public class CIS552Project {
 		}
 		if (selectBody instanceof Union) {
 			Union union = (Union) selectBody;
-				union.getPlainSelects().forEach(plainSelect ->{
-					try {
-						pvalResult.addAll(evaluateResult(plainSelect));
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				});
+			union.getPlainSelects().forEach(plainSelect -> {
+				try {
+					pvalResult.addAll(evaluateResult(plainSelect));
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			});
 		}
 		return pvalResult;
 	}
@@ -148,7 +148,7 @@ public class CIS552Project {
 	private static void createTable(Statement statement) {
 		CreateTable createTable = (CreateTable) statement;
 		String tableName = createTable.getTable().getName();
-		TableSchema tableScehma = new TableSchema(tableName, createTable.getColumnDefinitions());
+		TableSchema tableScehma = new TableSchema(new Table(tableName), createTable.getColumnDefinitions());
 		tables.put(tableName, tableScehma);
 	}
 
@@ -246,13 +246,13 @@ public class CIS552Project {
 	private static List<String[]> applyDistinct(List<String[]> initialResult, Distinct distinct) {
 		List<String[]> finalResultList = new ArrayList<>();
 		firstLoop: for (String[] result : initialResult) {
-			secondLoop:for (String[] finalResult : finalResultList) {
+			secondLoop: for (String[] finalResult : finalResultList) {
 				for (int i = 0; i < finalResult.length; i++) {
 					if (!result[i].equals(finalResult[i])) {
 						continue secondLoop;
 					}
 				}
-					continue firstLoop;
+				continue firstLoop;
 			}
 			finalResultList.add(result);
 		}
@@ -273,7 +273,7 @@ public class CIS552Project {
 				colDef.setColumnName(columnAlias);
 			}
 			colDefList.add(colDef);
-			TableSchema tableSchema = new TableSchema(tableName, colDefList);
+			TableSchema tableSchema = new TableSchema(new Table(tableName), colDefList);
 			tables.put(tableName, tableSchema);
 		}
 
@@ -284,9 +284,7 @@ public class CIS552Project {
 		ColumnDefinition colDef = null;
 		if (exp instanceof Column) {
 			Column column = (Column) exp;
-			// column =
-			// determineColumnNameFromWholeName(column.getColumnName(),aliasandTableName);
-			colDef = getColDefFromFromItems(column, fromItems);
+			colDef = getTableSchemaForColumnFromFromItems(column, fromItems).getColumnDefinition(column.getColumnName());
 		}
 		if (exp instanceof Addition) {
 			Addition add = (Addition) exp;
@@ -341,18 +339,18 @@ public class CIS552Project {
 		List<Expression> finalExpItemList = new ArrayList<>();
 		for (SelectItem selectItem : selectItems) {
 			if (selectItem instanceof SelectExpressionItem) {
-                if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
-                    Function funExp = (Function) ((SelectExpressionItem) selectItem).getExpression();
-                    String funName = funExp.getName();
-                    switch (funName) {
-                        case "count":
-                            if (funExp.isAllColumns()) {
-                                finalResult.add(new String[]{Integer.toString(rowsResult.size())});
-                                return finalResult;
-                            }
-                    }
+				if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
+					Function funExp = (Function) ((SelectExpressionItem) selectItem).getExpression();
+					String funName = funExp.getName();
+					switch (funName) {
+					case "count":
+						if (funExp.isAllColumns()) {
+							finalResult.add(new String[] { Integer.toString(rowsResult.size()) });
+							return finalResult;
+						}
+					}
 
-                }
+				}
 				finalExpItemList.add(((SelectExpressionItem) selectItem).getExpression());
 			} else if (selectItem instanceof AllTableColumns) {
 				AllTableColumns allTableColumn = (AllTableColumns) selectItem;
@@ -396,18 +394,17 @@ public class CIS552Project {
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column column) throws SQLException {
-				String aliasTableName = column.getTable().getName();
-				String wholeColumnName = column.getWholeColumnName();
+				Table table = column.getTable();
 				ColumnDefinition colDef = null;
-				if (aliasTableName == null) {
-					colDef = getColDefFromFromItems(column, fromItems);
-				} else {
-					String tableName = aliasandTableName.get(aliasTableName);
-					colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
+				if (table == null || table.getName() == null) {
+					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
+					column.setTable(table);
 				}
+				String tableName = aliasandTableName.get(table.getName());
+				colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
 				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
 
-				int pos = colPosWithTableAlias.get(wholeColumnName);
+				int pos = colPosWithTableAlias.get(column.getWholeColumnName());
 				String value = rowResult[pos];
 				switch (colSqlDataType) {
 				case CHAR:
@@ -430,16 +427,17 @@ public class CIS552Project {
 
 	}
 
-	protected static ColumnDefinition getColDefFromFromItems(Column column, List<FromItem> fromItems) {
-		ColumnDefinition colDef = null;
+	protected static TableSchema getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems) {
 		for (FromItem fromItem : fromItems) {
 			if (fromItem instanceof Table) {
 				Table table = (Table) fromItem;
 				TableSchema tableSchema = tables.get(table.getName());
-				colDef = tableSchema.getColumnDefinition(column.getColumnName());
+				if (tableSchema.containsColumn(column.getColumnName())) {
+					return tableSchema;
+				}
 			}
 		}
-		return colDef;
+		return null;
 	}
 
 	public static Column determineColumnNameFromWholeName(String columnName, Map<String, String> aliasandTableName) {

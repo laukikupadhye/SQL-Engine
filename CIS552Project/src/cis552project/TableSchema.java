@@ -16,19 +16,17 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
 public class TableSchema {
 
-    private String tableName = "";
-    private List<ColumnDefinition> colDefList =  new ArrayList<>();
+    private Table table = new Table();
     private List<Column> colList =  new ArrayList<>();
     private Map<String, Integer> colPosition = new HashMap<>();
     private Map<String, ColumnDefinition> colDefMap = new HashMap<>();
 
-    public TableSchema(String tableName, List<ColumnDefinition> colDefList) {
-        this.tableName = tableName;
-        this.colDefList = colDefList;
+    public TableSchema(Table table, List<ColumnDefinition> colDefList) {
+        this.table = table;
         int pos = 0;
         for (ColumnDefinition colDef : colDefList) {
         	String columnName = colDef.getColumnName();
-        	Column column = new Column(new Table(tableName), columnName);
+        	Column column = new Column(table, columnName);
             colList.add(column);
             colPosition.put(columnName, pos);
             colDefMap.put(columnName,colDef);
@@ -48,4 +46,16 @@ public class TableSchema {
         return colDefMap.get(colName);
     }
 
+    public boolean containsColumn(String columnName) {
+    	for (Column col : colList) {
+			if(col.getColumnName().equals(columnName)) {
+				return true;
+			}
+		}
+    	return false;
+    }
+
+	public Table getTable() {
+		return table;
+	}
 }

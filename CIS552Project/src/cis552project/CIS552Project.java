@@ -7,6 +7,7 @@ package cis552project;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.sql.SQLException;
@@ -95,7 +96,7 @@ public class CIS552Project {
 
 	}
 
-	private static List<String[]> selectEvaluation(SelectBody selectBody) throws FileNotFoundException {
+	private static List<String[]> selectEvaluation(SelectBody selectBody) throws IOException {
 
 		List<String[]> pvalResult = new ArrayList<>();
 		if (selectBody instanceof PlainSelect) {
@@ -114,10 +115,10 @@ public class CIS552Project {
 			union.getPlainSelects().forEach(plainSelect -> {
 				try {
 					pvalResult.addAll(evaluateResult(plainSelect));
-				} catch (FileNotFoundException e) {
+				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				} catch (SQLException e) {
+				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
@@ -152,7 +153,7 @@ public class CIS552Project {
 		tables.put(tableName, tableScehma);
 	}
 
-	private static List<String[]> evaluateResult(PlainSelect plainSelect) throws FileNotFoundException, SQLException {
+	private static List<String[]> evaluateResult(PlainSelect plainSelect) throws SQLException, IOException {
 		Map<String, String> aliasandTableName = new HashMap<>();
 		Map<String, Integer> colPosWithTableAlias = new HashMap<>();
 		List<Join> joins = plainSelect.getJoins();

@@ -158,6 +158,12 @@ public class CIS552Project {
 		List<Join> joins = plainSelect.getJoins();
 		FromItem fromItem = plainSelect.getFromItem();
 		List<FromItem> fromItemList = new ArrayList<>();
+		fromItemList.add(plainSelect.getFromItem());
+		if (plainSelect.getJoins() != null) {
+			plainSelect.getJoins().forEach(x -> {
+				fromItemList.add(x.getRightItem());
+			});
+		}
 		Expression where = plainSelect.getWhere();
 		String tableName = fromItem.toString();
 		String aliasName = tableName;
@@ -225,16 +231,10 @@ public class CIS552Project {
 			finalResult = tempResult;
 		}
 
-		List<FromItem> fromItems = new ArrayList<>();
 		List<SelectItem> selectItems = plainSelect.getSelectItems();
 
-		fromItems.add(plainSelect.getFromItem());
-		if (plainSelect.getJoins() != null) {
-			plainSelect.getJoins().forEach(x -> {
-				fromItems.add(x.getRightItem());
-			});
-		}
-		finalResult = solveSelectItemExpression(finalResult, selectItems, fromItems, aliasandTableName,
+		
+		finalResult = solveSelectItemExpression(finalResult, selectItems, fromItemList, aliasandTableName,
 				colPosWithTableAlias);
 		Distinct distinct = plainSelect.getDistinct();
 		if (distinct != null) {

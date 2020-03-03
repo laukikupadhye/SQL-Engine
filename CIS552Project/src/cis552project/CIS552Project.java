@@ -143,7 +143,6 @@ public class CIS552Project {
 				fromItemList.add(join.getRightItem());
 			}
 		}
-		Expression where = plainSelect.getWhere();
 		String tableName = fromItem.toString();
 		String aliasName = tableName;
 		List<String[]> tempResult = new ArrayList<>();
@@ -171,6 +170,7 @@ public class CIS552Project {
 			if (aliasName == null) {
 				aliasName = tableName;
 			}
+			fromItemList.add(table);
 		}
 		addColPosWithTabAlias(tableName, aliasName, colPosWithTableAlias);
 		aliasandTableName.put(aliasName, tableName);
@@ -218,10 +218,11 @@ public class CIS552Project {
 			}
 
 		}
+
 		List<String[]> finalResult = new ArrayList<>();
-		if (where != null) {
+		if (plainSelect.getWhere() != null) {
 			for (String[] eachRow : tempResult) {
-				PrimitiveValue primValue = applyCondition(eachRow, where, fromItemList, aliasandTableName,
+				PrimitiveValue primValue = applyCondition(eachRow, plainSelect.getWhere(), fromItemList, aliasandTableName,
 						colPosWithTableAlias);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 					finalResult.add(eachRow);

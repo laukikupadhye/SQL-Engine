@@ -17,12 +17,14 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 public class TableSchema {
 
     private Table table = new Table();
+    private List<ColumnDefinition> colDefList = new ArrayList<ColumnDefinition>();
     private List<Column> colList =  new ArrayList<>();
     private Map<String, Integer> colPosition = new HashMap<>();
     private Map<String, ColumnDefinition> colDefMap = new HashMap<>();
 
     public TableSchema(Table table, List<ColumnDefinition> colDefList) {
         this.table = table;
+        this.colDefList = colDefList;
         int pos = 0;
         for (ColumnDefinition colDef : colDefList) {
         	String columnName = colDef.getColumnName();
@@ -57,5 +59,9 @@ public class TableSchema {
 
 	public Table getTable() {
 		return table;
+	}
+	
+	public List<ColumnDefinition> getColDefList() {
+		return colDefList;
 	}
 }

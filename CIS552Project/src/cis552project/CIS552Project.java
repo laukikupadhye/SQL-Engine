@@ -163,7 +163,7 @@ public class CIS552Project {
 					fromItems.add(x.getRightItem());
 				});
 			}
-			copyTableSchemaForAlias(selectItems, fromItems, aliasName, aliasandTableName);
+			copyTableSchemaForAlias(selectItems, fromItems, aliasName);
 		}
 		if (fromItem instanceof Table) {
 			Table table = (Table) fromItem;
@@ -180,13 +180,38 @@ public class CIS552Project {
 			for (Join join : joins) {
 
 				Table joinTable = null;
+				System.out.println("join type class --"+join.getRightItem().getClass());
+				List<String[]> tempJoinResult = new ArrayList<>();
 				if (join.getRightItem() instanceof Table) {
 					joinTable = (Table) join.getRightItem();
+					String joinAliasTableName = joinTable.getAlias();
+					if (joinAliasTableName == null) {
+						joinAliasTableName = tableName;
+					}
+					addColPosWithTabAlias(joinTable.getName(), joinTable.getAlias(), colPosWithTableAlias);
+					aliasandTableName.put(joinAliasTableName, joinTable.getName());
+					tempJoinResult = CIS552ProjectUtils
+							.readTable(dataPath + "\\" + joinTable.getName() + ".dat");
+				}else if(join.getRightItem() instanceof SubSelect) {
+
+					SelectBody subSelectBody = ((SubSelect) join.getRightItem()).getSelectBody();
+					tempJoinResult = selectEvaluation(subSelectBody);
+					FromItem joinFromItem = join.getRightItem();
+
+					String joinAliasName = joinFromItem.getAlias();
+					List<FromItem> fromItems = new ArrayList<>();
+					List<SelectItem> selectItems = ((PlainSelect) subSelectBody).getSelectItems();
+
+					fromItems.add(((PlainSelect) subSelectBody).getFromItem());
+					if (((PlainSelect) subSelectBody).getJoins() != null) {
+						((PlainSelect) subSelectBody).getJoins().forEach(x -> {
+							fromItems.add(x.getRightItem());
+						});
+					}
+					copyTableSchemaForAlias(selectItems, fromItems, joinAliasName);
+					addColPosWithTabAlias(joinAliasName, joinAliasName, colPosWithTableAlias);
+					aliasandTableName.put(joinAliasName, joinAliasName);
 				}
-				addColPosWithTabAlias(joinTable.getName(), joinTable.getAlias(), colPosWithTableAlias);
-				aliasandTableName.put(joinTable.getAlias(), joinTable.getName());
-				List<String[]> tempJoinResult = CIS552ProjectUtils
-						.readTable(dataPath + "\\" + joinTable.getName() + ".dat");
 				List<String[]> tempJoined = new ArrayList<>();
 				for (String[] fromRes : tempResult) {
 					for (String[] joinRes : tempJoinResult) {
@@ -242,22 +267,30 @@ public class CIS552Project {
 	}
 
 	private static void copyTableSchemaForAlias(List<SelectItem> selectItems, List<FromItem> fromItems,
-			String tableName, Map<String, String> aliasandTableName) {
+			String tableName) {
 		List<ColumnDefinition> colDefList = new ArrayList<>();
-		for (SelectItem si : selectItems) {
-			SelectExpressionItem sei = (SelectExpressionItem) si;
-			String columnAlias = sei.getAlias();
-			Expression exp = sei.getExpression();
-			ColumnDefinition colDef = getColDefOfExpression(exp, fromItems);
-
-			if (columnAlias != null) {
-				colDef.setColumnName(columnAlias);
+		if(selectItems.get(0) instanceof AllColumns) {
+			for(FromItem fromItem: fromItems) {
+				TableSchema tableSchema = tables.get(((Table) fromItem).getName());
+				colDefList.addAll(tableSchema.getColDefList());
 			}
-			colDefList.add(colDef);
-			TableSchema tableSchema = new TableSchema(new Table(tableName), colDefList);
-			tables.put(tableName, tableSchema);
+		}else {
+			for (SelectItem si : selectItems) {
+				SelectExpressionItem sei = (SelectExpressionItem) si;
+				String columnAlias = sei.getAlias();
+				Expression exp = sei.getExpression();
+				ColumnDefinition colDef = getColDefOfExpression(exp, fromItems);
+
+				if (columnAlias != null) {
+					colDef.setColumnName(columnAlias);
+				}
+				colDefList.add(colDef);
+				
+			}
 		}
 
+		TableSchema tableSchema = new TableSchema(new Table(tableName), colDefList);
+		tables.put(tableName, tableSchema);
 	}
 
 	private static ColumnDefinition getColDefOfExpression(Expression exp, List<FromItem> fromItems) {

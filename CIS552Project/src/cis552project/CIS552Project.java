@@ -181,11 +181,8 @@ public class CIS552Project {
 				List<String[]> tempJoinResult = new ArrayList<>();
 				if (join.getRightItem() instanceof Table) {
 					joinTable = (Table) join.getRightItem();
-					String joinAliasTableName = joinTable.getAlias();
-					if (joinAliasTableName == null) {
-						joinAliasTableName = tableName;
-					}
-					addColPosWithTabAlias(joinTable.getName(), joinTable.getAlias(), colPosWithTableAlias);
+					String joinAliasTableName = joinTable.getAlias() != null? joinTable.getAlias() : joinTable.getName();
+					addColPosWithTabAlias(joinTable.getName(), joinAliasTableName, colPosWithTableAlias);
 					aliasandTableName.put(joinAliasTableName, joinTable.getName());
 					tempJoinResult = CIS552ProjectUtils
 							.readTable(dataPath + "\\" + joinTable.getName() + ".dat");

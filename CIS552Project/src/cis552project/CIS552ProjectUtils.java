@@ -17,34 +17,35 @@ public class CIS552ProjectUtils {
 	}
 
 	public static List<String[]> readTable(String filePath) throws IOException {
-		// File myObj = new File(filePath);
-		FileReader file = new FileReader(filePath);
-		BufferedReader fileStream = new BufferedReader(file);
 		List<String[]> resultRows = new ArrayList<>();
-		String temp = fileStream.readLine();
-		while (temp != null) {
-			resultRows.add(temp.split("\\|"));
-			temp = fileStream.readLine();
+		try(FileReader file = new FileReader(filePath)){
+			BufferedReader fileStream = new BufferedReader(file);
+			String temp = fileStream.readLine();
+			while (temp != null) {
+				resultRows.add(temp.split("\\|"));
+				temp = fileStream.readLine();
+			}
 		}
 		return resultRows;
 	}
 	public static List<String> readCommands(String filePath) throws IOException {
-		// File myObj = new File(filePath);
-		FileReader file = new FileReader(filePath);
-		BufferedReader fileStream = new BufferedReader(file);
 		List<String> commandsList = new ArrayList<>();
-		String temp = fileStream.readLine();
-		String previousString = temp;
-		while (temp != null) {
-			if (!temp.endsWith(";")) {
-				previousString += " " + temp;
-			} else {
-				temp = previousString + " " + temp;
-				previousString = "";
-				commandsList.add(temp);
+		try(FileReader file = new FileReader(filePath)){
+			BufferedReader fileStream = new BufferedReader(file);
+			String temp = fileStream.readLine();
+			String previousString = temp;
+			while (temp != null) {
+				if (!temp.endsWith(";")) {
+					previousString += " " + temp;
+				} else {
+					temp = previousString + " " + temp;
+					previousString = "";
+					commandsList.add(temp);
+				}
+				temp = fileStream.readLine();
 			}
-			temp = fileStream.readLine();
 		}
+		
 		return commandsList;
 	}
 	

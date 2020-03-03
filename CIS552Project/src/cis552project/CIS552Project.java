@@ -63,9 +63,8 @@ public class CIS552Project {
 		try {
 			List<String> commands = CIS552ProjectUtils.readCommands(commandsLoc);
 			for (String command : commands) {
-				Reader reader = new StringReader(command);
-				CCJSqlParser parser = new CCJSqlParser(reader);
-				try {
+				try(Reader reader = new StringReader(command)) {
+					CCJSqlParser parser = new CCJSqlParser(reader);
 					Statement statement = parser.Statement();
 					if (statement instanceof Select) {
 						Select select = (Select) statement;
@@ -139,11 +138,10 @@ public class CIS552Project {
 		List<Join> joins = plainSelect.getJoins();
 		FromItem fromItem = plainSelect.getFromItem();
 		List<FromItem> fromItemList = new ArrayList<>();
-		fromItemList.add(plainSelect.getFromItem());
 		if (plainSelect.getJoins() != null) {
-			plainSelect.getJoins().forEach(x -> {
-				fromItemList.add(x.getRightItem());
-			});
+			for(Join join:plainSelect.getJoins()){
+				fromItemList.add(join.getRightItem());
+			}
 		}
 		Expression where = plainSelect.getWhere();
 		String tableName = fromItem.toString();
@@ -154,16 +152,16 @@ public class CIS552Project {
 			tempResult = selectEvaluation(subSelectBody);
 			aliasName = fromItem.getAlias();
 			tableName = fromItem.getAlias();
-			List<FromItem> fromItems = new ArrayList<>();
+			fromItemList = new ArrayList<>();
 			List<SelectItem> selectItems = ((PlainSelect) subSelectBody).getSelectItems();
 
-			fromItems.add(((PlainSelect) subSelectBody).getFromItem());
+			fromItemList.add(((PlainSelect) subSelectBody).getFromItem());
 			if (((PlainSelect) subSelectBody).getJoins() != null) {
-				((PlainSelect) subSelectBody).getJoins().forEach(x -> {
-					fromItems.add(x.getRightItem());
-				});
+				for(Join join : ((PlainSelect) subSelectBody).getJoins() ){
+					fromItemList.add(join.getRightItem());
+				}
 			}
-			copyTableSchemaForAlias(selectItems, fromItems, aliasName);
+			copyTableSchemaForAlias(selectItems, fromItemList, aliasName);
 		}
 		if (fromItem instanceof Table) {
 			Table table = (Table) fromItem;
@@ -180,7 +178,6 @@ public class CIS552Project {
 			for (Join join : joins) {
 
 				Table joinTable = null;
-				System.out.println("join type class --"+join.getRightItem().getClass());
 				List<String[]> tempJoinResult = new ArrayList<>();
 				if (join.getRightItem() instanceof Table) {
 					joinTable = (Table) join.getRightItem();
@@ -279,16 +276,15 @@ public class CIS552Project {
 				SelectExpressionItem sei = (SelectExpressionItem) si;
 				String columnAlias = sei.getAlias();
 				Expression exp = sei.getExpression();
-				ColumnDefinition colDef = getColDefOfExpression(exp, fromItems);
-
-				if (columnAlias != null) {
-					colDef.setColumnName(columnAlias);
-				}
-				colDefList.add(colDef);
-				
+				ColumnDefinition colDef =  new ColumnDefinition();
+				ColumnDefinition oldColDef = getColDefOfExpression(exp, fromItems);
+				colDef.setColDataType(oldColDef.getColDataType());
+				colDef.setColumnName(columnAlias != null? columnAlias: oldColDef.getColumnName());
+				colDef.setColumnSpecStrings(oldColDef.getColumnSpecStrings());
+				colDefList.add(colDef);                                                                                                                                                                                                                     
 			}
 		}
-
+		fromItems.add(new Table(tableName));
 		TableSchema tableSchema = new TableSchema(new Table(tableName), colDefList);
 		tables.put(tableName, tableSchema);
 	}
@@ -411,6 +407,9 @@ public class CIS552Project {
 				Table table = column.getTable();
 				ColumnDefinition colDef = null;
 				if (table == null || table.getName() == null) {
+					if( getTableSchemaForColumnFromFromItems(column, fromItems) == null) {
+						System.out.println();
+					}
 					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
 					column.setTable(table);
 				}

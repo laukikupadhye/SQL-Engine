@@ -68,7 +68,7 @@ public class CIS552Project {
 		dataPath = args[1];
 
 		try {
-			List<String> commands = readCommands(commandsLoc);
+			List<String> commands = CIS552ProjectUtils.readCommands(commandsLoc);
 			for (String command : commands) {
 				Reader reader = new StringReader(command);
 				CCJSqlParser parser = new CCJSqlParser(reader);
@@ -88,7 +88,7 @@ public class CIS552Project {
 					e.printStackTrace();
 				}
 			}
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			System.out.println("Commands location was not identified. Please see the below exception.");
 			System.out.println("Exception : " + e.getLocalizedMessage());
 			e.printStackTrace();
@@ -127,24 +127,7 @@ public class CIS552Project {
 		return pvalResult;
 	}
 
-	private static List<String> readCommands(String filePath) throws FileNotFoundException {
-		List<String> commandsList = new ArrayList<>();
-		try (Scanner myReader = new Scanner(new File(filePath))) {
-			String previousString = "";
-			while (myReader.hasNext()) {
-				String statement = myReader.next();
-				if (!statement.endsWith(";")) {
-					previousString += " " + statement;
-					continue;
-				} else {
-					statement = previousString + " " + statement;
-					previousString = "";
-				}
-				commandsList.add(statement);
-			}
-		}
-		return commandsList;
-	}
+	
 
 	private static void createTable(Statement statement) {
 		CreateTable createTable = (CreateTable) statement;

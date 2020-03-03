@@ -33,4 +33,24 @@ public class CIS552ProjectUtils {
 		}
 		return resultRows;
 	}
+	public static List<String> readCommands(String filePath) throws IOException {
+		// File myObj = new File(filePath);
+		FileReader file = new FileReader(filePath);
+		BufferedReader fileStream = new BufferedReader(file);
+		List<String> commandsList = new ArrayList<>();
+		String temp = fileStream.readLine();
+		String previousString = temp;
+		while (temp != null) {
+			if (!temp.endsWith(";")) {
+				previousString += " " + temp;
+			} else {
+				temp = previousString + " " + temp;
+				previousString = "";
+				commandsList.add(temp);
+			}
+			temp = fileStream.readLine();
+		}
+		return commandsList;
+	}
+	
 }

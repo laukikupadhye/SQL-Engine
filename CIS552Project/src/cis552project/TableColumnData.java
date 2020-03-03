@@ -14,7 +14,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
-public class TableSchema {
+public class TableColumnData {
 
     private Table table = new Table();
     private List<ColumnDefinition> colDefList = new ArrayList<ColumnDefinition>();
@@ -22,7 +22,7 @@ public class TableSchema {
     private Map<String, Integer> colPosition = new HashMap<>();
     private Map<String, ColumnDefinition> colDefMap = new HashMap<>();
 
-    public TableSchema(Table table, List<ColumnDefinition> colDefList) {
+    public TableColumnData(Table table, List<ColumnDefinition> colDefList) {
         this.table = table;
         this.colDefList = colDefList;
         int pos = 0;

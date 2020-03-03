@@ -51,7 +51,7 @@ public class CIS552Project {
 
 	static String dataPath = null;
 	static String commandsLoc = null;
-	static Map<String, TableSchema> tables = new HashMap<>();
+	static Map<String, TableColumnData> tables = new HashMap<>();
 
 	/**
 	 * @param args the command line arguments
@@ -105,7 +105,7 @@ public class CIS552Project {
 		List<String[]> tempResult = new ArrayList<>();
 		if (selectBody instanceof Union) {
 			Union union = (Union) selectBody;
-			union.getPlainSelects().forEach(plainSelect -> {
+			for(PlainSelect plainSelect : union.getPlainSelects()) {
 				try {
 					tempResult.addAll(evaluateResult(plainSelect));
 				} catch (SQLException e) {
@@ -115,7 +115,7 @@ public class CIS552Project {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			});
+			}
 			if(!union.isAll()) {
 				return applyDistinct(tempResult);
 			}
@@ -128,8 +128,8 @@ public class CIS552Project {
 	private static void createTable(Statement statement) {
 		CreateTable createTable = (CreateTable) statement;
 		String tableName = createTable.getTable().getName();
-		TableSchema tableScehma = new TableSchema(new Table(tableName), createTable.getColumnDefinitions());
-		tables.put(tableName, tableScehma);
+		TableColumnData tableColData = new TableColumnData(new Table(tableName), createTable.getColumnDefinitions());
+		tables.put(tableName, tableColData);
 	}
 
 	private static List<String[]> evaluateResult(PlainSelect plainSelect) throws SQLException, IOException {
@@ -201,9 +201,7 @@ public class CIS552Project {
 
 					fromItems.add(((PlainSelect) subSelectBody).getFromItem());
 					if (((PlainSelect) subSelectBody).getJoins() != null) {
-						((PlainSelect) subSelectBody).getJoins().forEach(x -> {
-							fromItems.add(x.getRightItem());
-						});
+						fromItems.addAll(((PlainSelect) subSelectBody).getJoins().stream().map(x -> x.getRightItem()).collect(Collectors.toList()));
 					}
 					copyTableSchemaForAlias(selectItems, fromItems, joinAliasName);
 					addColPosWithTabAlias(joinAliasName, joinAliasName, colPosWithTableAlias);
@@ -268,7 +266,7 @@ public class CIS552Project {
 		List<ColumnDefinition> colDefList = new ArrayList<>();
 		if(selectItems.get(0) instanceof AllColumns) {
 			for(FromItem fromItem: fromItems) {
-				TableSchema tableSchema = tables.get(((Table) fromItem).getName());
+				TableColumnData tableSchema = tables.get(((Table) fromItem).getName());
 				colDefList.addAll(tableSchema.getColDefList());
 			}
 		}else {
@@ -285,7 +283,7 @@ public class CIS552Project {
 			}
 		}
 		fromItems.add(new Table(tableName));
-		TableSchema tableSchema = new TableSchema(new Table(tableName), colDefList);
+		TableColumnData tableSchema = new TableColumnData(new Table(tableName), colDefList);
 		tables.put(tableName, tableSchema);
 	}
 
@@ -329,7 +327,7 @@ public class CIS552Project {
 
 	private static void addColPosWithTabAlias(String tableName, String aliasName,
 			Map<String, Integer> colPosWithTableAlias) {
-		TableSchema selectTableTemp = tables.get(tableName);
+		TableColumnData selectTableTemp = tables.get(tableName);
 		List<Column> columnList = selectTableTemp.getListofColumns();
 		int colPos = colPosWithTableAlias.size();
 		for (Column col : columnList) {
@@ -364,7 +362,7 @@ public class CIS552Project {
 				finalExpItemList.add(((SelectExpressionItem) selectItem).getExpression());
 			} else if (selectItem instanceof AllTableColumns) {
 				AllTableColumns allTableColumn = (AllTableColumns) selectItem;
-				TableSchema tableSchema = tables.get(aliasandTableName.get(allTableColumn.getTable().getName()));
+				TableColumnData tableSchema = tables.get(aliasandTableName.get(allTableColumn.getTable().getName()));
 
 				finalExpItemList.addAll(tableSchema.getListofColumns().stream()
 						.map(col -> (Expression) new Column(allTableColumn.getTable(), col.getColumnName()))
@@ -440,11 +438,11 @@ public class CIS552Project {
 
 	}
 
-	protected static TableSchema getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems) {
+	protected static TableColumnData getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems) {
 		for (FromItem fromItem : fromItems) {
 			if (fromItem instanceof Table) {
 				Table table = (Table) fromItem;
-				TableSchema tableSchema = tables.get(table.getName());
+				TableColumnData tableSchema = tables.get(table.getName());
 				if (tableSchema.containsColumn(column.getColumnName())) {
 					return tableSchema;
 				}

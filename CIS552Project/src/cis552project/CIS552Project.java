@@ -91,11 +91,10 @@ public class CIS552Project {
 
 	private static List<String[]> selectEvaluation(SelectBody selectBody) throws IOException {
 
-		List<String[]> pvalResult = new ArrayList<>();
 		if (selectBody instanceof PlainSelect) {
 			PlainSelect plainSelect = (PlainSelect) selectBody;
 			try {
-				pvalResult.addAll(evaluateResult(plainSelect));
+				return evaluateResult(plainSelect);
 
 			} catch (SQLException e) {
 				System.out.println("Error Occured while parsing the statements.");
@@ -103,11 +102,13 @@ public class CIS552Project {
 				e.printStackTrace();
 			}
 		}
+
+		List<String[]> tempResult = new ArrayList<>();
 		if (selectBody instanceof Union) {
 			Union union = (Union) selectBody;
 			union.getPlainSelects().forEach(plainSelect -> {
 				try {
-					pvalResult.addAll(evaluateResult(plainSelect));
+					tempResult.addAll(evaluateResult(plainSelect));
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -116,8 +117,11 @@ public class CIS552Project {
 					e.printStackTrace();
 				}
 			});
+			if(!union.isAll()) {
+				return applyDistinct(tempResult);
+			}
 		}
-		return pvalResult;
+		return tempResult;
 	}
 
 	
@@ -215,12 +219,12 @@ public class CIS552Project {
 				colPosWithTableAlias);
 		Distinct distinct = plainSelect.getDistinct();
 		if (distinct != null) {
-			finalResult = applyDistinct(finalResult, distinct);
+			finalResult = applyDistinct(finalResult);
 		}
 		return finalResult;
 	}
 
-	private static List<String[]> applyDistinct(List<String[]> initialResult, Distinct distinct) {
+	private static List<String[]> applyDistinct(List<String[]> initialResult) {
 		List<String[]> finalResultList = new ArrayList<>();
 		firstLoop: for (String[] result : initialResult) {
 			secondLoop: for (String[] finalResult : finalResultList) {

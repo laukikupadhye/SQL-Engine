@@ -5,21 +5,14 @@
  */
 package cis552project;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import net.sf.jsqlparser.eval.Eval;

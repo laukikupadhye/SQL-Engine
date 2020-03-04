@@ -27,6 +27,7 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
 import net.sf.jsqlparser.expression.operators.arithmetic.Division;
 import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
+import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
@@ -166,7 +167,7 @@ public class CIS552Project {
 			Table table = (Table) fromItem;
 			tableName = table.getName();
 			aliasName = table.getAlias();
-			tempResult = CIS552ProjectUtils.readTable(dataPath + "\\" + tableName + ".dat");
+			tempResult = CIS552ProjectUtils.readTable(dataPath + "\\", tableName);
 			if (aliasName == null) {
 				aliasName = tableName;
 			}
@@ -185,7 +186,7 @@ public class CIS552Project {
 					addColPosWithTabAlias(joinTable.getName(), joinAliasTableName, colPosWithTableAlias);
 					aliasandTableName.put(joinAliasTableName, joinTable.getName());
 					tempJoinResult = CIS552ProjectUtils
-							.readTable(dataPath + "\\" + joinTable.getName() + ".dat");
+							.readTable(dataPath + "\\", joinTable.getName());
 				}else if(join.getRightItem() instanceof SubSelect) {
 
 					SelectBody subSelectBody = ((SubSelect) join.getRightItem()).getSelectBody();
@@ -432,8 +433,30 @@ public class CIS552Project {
 			}
 
 		};
-		return eval.eval(where);
+		return eval.eval(expressionEvaluator(where,fromItems, aliasandTableName));
 
+	}
+	private static Expression expressionEvaluator(Expression exp, List<FromItem> fromItems, Map<String, String> aliasandTableName){
+		if(exp  instanceof Between) {
+			Between bet = (Between)exp;
+			if(bet.getLeftExpression() instanceof Column) {
+
+				Column column = (Column) bet.getLeftExpression();
+				Table table = column.getTable();
+				ColumnDefinition colDef = null;
+				if (table == null || table.getName() == null) {
+					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
+				}
+				String tableName = aliasandTableName.get(table.getName());
+				colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
+				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
+				if(SQLDataType.DATE.equals(colSqlDataType)) {
+					bet.setBetweenExpressionEnd(new DateValue(bet.getBetweenExpressionEnd().toString().replace("'", "")));
+					bet.setBetweenExpressionStart(new DateValue(bet.getBetweenExpressionStart().toString().replace("'", "")));
+				}
+			}
+		}
+		return exp;
 	}
 
 	protected static TableColumnData getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems) {

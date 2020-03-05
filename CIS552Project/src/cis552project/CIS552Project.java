@@ -29,6 +29,7 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.parser.CCJSqlParser;
+import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
@@ -64,7 +65,7 @@ public class CIS552Project {
 		try {
 			List<String> commands = CIS552ProjectUtils.readCommands(commandsLoc);
 			for (String command : commands) {
-				try(Reader reader = new StringReader(command)) {
+				try (Reader reader = new StringReader(command)) {
 					CCJSqlParser parser = new CCJSqlParser(reader);
 					Statement statement = parser.Statement();
 					if (statement instanceof Select) {
@@ -75,56 +76,40 @@ public class CIS552Project {
 						printResult(resultArray);
 					} else if (statement instanceof CreateTable) {
 						createTable(statement);
+						System.out.println("Table Create Successfully");
 					}
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} catch (SQLException | ParseException e) {
+					System.out.println("Exception : " + e.getLocalizedMessage());
+				} finally {
+					System.out.println("=");
 				}
 			}
 		} catch (IOException e) {
 			System.out.println("Commands location was not identified. Please see the below exception.");
 			System.out.println("Exception : " + e.getLocalizedMessage());
-			e.printStackTrace();
 		}
 
 	}
 
-	private static List<String[]> selectEvaluation(SelectBody selectBody) throws IOException {
+	private static List<String[]> selectEvaluation(SelectBody selectBody) throws IOException, SQLException {
 
 		if (selectBody instanceof PlainSelect) {
 			PlainSelect plainSelect = (PlainSelect) selectBody;
-			try {
-				return evaluateResult(plainSelect);
-
-			} catch (SQLException e) {
-				System.out.println("Error Occured while parsing the statements.");
-				System.out.println("Statement : " + plainSelect.toString());
-				e.printStackTrace();
-			}
+			return evaluateResult(plainSelect);
 		}
 
 		List<String[]> tempResult = new ArrayList<>();
 		if (selectBody instanceof Union) {
 			Union union = (Union) selectBody;
-			for(PlainSelect plainSelect : union.getPlainSelects()) {
-				try {
-					tempResult.addAll(evaluateResult(plainSelect));
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			for (PlainSelect plainSelect : union.getPlainSelects()) {
+				tempResult.addAll(evaluateResult(plainSelect));
 			}
-			if(!union.isAll()) {
+			if (!union.isAll()) {
 				return applyDistinct(tempResult);
 			}
 		}
 		return tempResult;
 	}
-
-	
 
 	private static void createTable(Statement statement) {
 		CreateTable createTable = (CreateTable) statement;
@@ -140,7 +125,7 @@ public class CIS552Project {
 		FromItem fromItem = plainSelect.getFromItem();
 		List<FromItem> fromItemList = new ArrayList<>();
 		if (plainSelect.getJoins() != null) {
-			for(Join join:plainSelect.getJoins()){
+			for (Join join : plainSelect.getJoins()) {
 				fromItemList.add(join.getRightItem());
 			}
 		}
@@ -157,7 +142,7 @@ public class CIS552Project {
 
 			fromItemList.add(((PlainSelect) subSelectBody).getFromItem());
 			if (((PlainSelect) subSelectBody).getJoins() != null) {
-				for(Join join : ((PlainSelect) subSelectBody).getJoins() ){
+				for (Join join : ((PlainSelect) subSelectBody).getJoins()) {
 					fromItemList.add(join.getRightItem());
 				}
 			}
@@ -182,12 +167,12 @@ public class CIS552Project {
 				List<String[]> tempJoinResult = new ArrayList<>();
 				if (join.getRightItem() instanceof Table) {
 					joinTable = (Table) join.getRightItem();
-					String joinAliasTableName = joinTable.getAlias() != null? joinTable.getAlias() : joinTable.getName();
+					String joinAliasTableName = joinTable.getAlias() != null ? joinTable.getAlias()
+							: joinTable.getName();
 					addColPosWithTabAlias(joinTable.getName(), joinAliasTableName, colPosWithTableAlias);
 					aliasandTableName.put(joinAliasTableName, joinTable.getName());
-					tempJoinResult = CIS552ProjectUtils
-							.readTable(dataPath + "\\", joinTable.getName());
-				}else if(join.getRightItem() instanceof SubSelect) {
+					tempJoinResult = CIS552ProjectUtils.readTable(dataPath + "\\", joinTable.getName());
+				} else if (join.getRightItem() instanceof SubSelect) {
 
 					SelectBody subSelectBody = ((SubSelect) join.getRightItem()).getSelectBody();
 					tempJoinResult = selectEvaluation(subSelectBody);
@@ -199,7 +184,8 @@ public class CIS552Project {
 
 					fromItems.add(((PlainSelect) subSelectBody).getFromItem());
 					if (((PlainSelect) subSelectBody).getJoins() != null) {
-						fromItems.addAll(((PlainSelect) subSelectBody).getJoins().stream().map(x -> x.getRightItem()).collect(Collectors.toList()));
+						fromItems.addAll(((PlainSelect) subSelectBody).getJoins().stream().map(x -> x.getRightItem())
+								.collect(Collectors.toList()));
 					}
 					copyTableSchemaForAlias(selectItems, fromItems, joinAliasName);
 					addColPosWithTabAlias(joinAliasName, joinAliasName, colPosWithTableAlias);
@@ -220,8 +206,8 @@ public class CIS552Project {
 		List<String[]> finalResult = new ArrayList<>();
 		if (plainSelect.getWhere() != null) {
 			for (String[] eachRow : tempResult) {
-				PrimitiveValue primValue = applyCondition(eachRow, plainSelect.getWhere(), fromItemList, aliasandTableName,
-						colPosWithTableAlias);
+				PrimitiveValue primValue = applyCondition(eachRow, plainSelect.getWhere(), fromItemList,
+						aliasandTableName, colPosWithTableAlias);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 					finalResult.add(eachRow);
 				}
@@ -233,7 +219,6 @@ public class CIS552Project {
 
 		List<SelectItem> selectItems = plainSelect.getSelectItems();
 
-		
 		finalResult = solveSelectItemExpression(finalResult, selectItems, fromItemList, aliasandTableName,
 				colPosWithTableAlias);
 		Distinct distinct = plainSelect.getDistinct();
@@ -263,22 +248,22 @@ public class CIS552Project {
 	private static void copyTableSchemaForAlias(List<SelectItem> selectItems, List<FromItem> fromItems,
 			String tableName) {
 		List<ColumnDefinition> colDefList = new ArrayList<>();
-		if(selectItems.get(0) instanceof AllColumns) {
-			for(FromItem fromItem: fromItems) {
+		if (selectItems.get(0) instanceof AllColumns) {
+			for (FromItem fromItem : fromItems) {
 				TableColumnData tableSchema = tables.get(((Table) fromItem).getName());
 				colDefList.addAll(tableSchema.getColDefList());
 			}
-		}else {
+		} else {
 			for (SelectItem si : selectItems) {
 				SelectExpressionItem sei = (SelectExpressionItem) si;
 				String columnAlias = sei.getAlias();
 				Expression exp = sei.getExpression();
-				ColumnDefinition colDef =  new ColumnDefinition();
+				ColumnDefinition colDef = new ColumnDefinition();
 				ColumnDefinition oldColDef = getColDefOfExpression(exp, fromItems);
 				colDef.setColDataType(oldColDef.getColDataType());
-				colDef.setColumnName(columnAlias != null? columnAlias: oldColDef.getColumnName());
+				colDef.setColumnName(columnAlias != null ? columnAlias : oldColDef.getColumnName());
 				colDef.setColumnSpecStrings(oldColDef.getColumnSpecStrings());
-				colDefList.add(colDef);                                                                                                                                                                                                                     
+				colDefList.add(colDef);
 			}
 		}
 		fromItems.add(new Table(tableName));
@@ -291,7 +276,8 @@ public class CIS552Project {
 		ColumnDefinition colDef = null;
 		if (exp instanceof Column) {
 			Column column = (Column) exp;
-			colDef = getTableSchemaForColumnFromFromItems(column, fromItems).getColumnDefinition(column.getColumnName());
+			colDef = getTableSchemaForColumnFromFromItems(column, fromItems)
+					.getColumnDefinition(column.getColumnName());
 		}
 		if (exp instanceof Addition) {
 			Addition add = (Addition) exp;
@@ -383,17 +369,16 @@ public class CIS552Project {
 	}
 
 	private static void printResult(List<String[]> rowsResult) throws SQLException {
-		System.out.println("Result : ");
 		for (String[] result : rowsResult) {
-			for (int i = 0; i < result.length; i++) {
-				System.out.print(result[i]);
-				if (i < result.length - 1) {
-					System.out.print("|");
-				}
-			}
-			System.out.println("");
+			System.out.println(String.join("|", result));
+//			for (int i = 0; i < result.length; i++) {
+//				System.out.print(result[i]);
+//				if (i < result.length - 1) {
+//					System.out.print("|");
+//				}
+//			}
+//			System.out.println("");
 		}
-		System.out.println("=");
 	}
 
 	private static PrimitiveValue applyCondition(String[] rowResult, Expression where, List<FromItem> fromItems,
@@ -404,7 +389,7 @@ public class CIS552Project {
 				Table table = column.getTable();
 				ColumnDefinition colDef = null;
 				if (table == null || table.getName() == null) {
-					if( getTableSchemaForColumnFromFromItems(column, fromItems) == null) {
+					if (getTableSchemaForColumnFromFromItems(column, fromItems) == null) {
 						System.out.println();
 					}
 					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
@@ -433,13 +418,15 @@ public class CIS552Project {
 			}
 
 		};
-		return eval.eval(expressionEvaluator(where,fromItems, aliasandTableName));
+		return eval.eval(expressionEvaluator(where, fromItems, aliasandTableName));
 
 	}
-	private static Expression expressionEvaluator(Expression exp, List<FromItem> fromItems, Map<String, String> aliasandTableName){
-		if(exp  instanceof Between) {
-			Between bet = (Between)exp;
-			if(bet.getLeftExpression() instanceof Column) {
+
+	private static Expression expressionEvaluator(Expression exp, List<FromItem> fromItems,
+			Map<String, String> aliasandTableName) {
+		if (exp instanceof Between) {
+			Between bet = (Between) exp;
+			if (bet.getLeftExpression() instanceof Column) {
 
 				Column column = (Column) bet.getLeftExpression();
 				Table table = column.getTable();
@@ -450,9 +437,11 @@ public class CIS552Project {
 				String tableName = aliasandTableName.get(table.getName());
 				colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
 				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
-				if(SQLDataType.DATE.equals(colSqlDataType)) {
-					bet.setBetweenExpressionEnd(new DateValue(bet.getBetweenExpressionEnd().toString().replace("'", "")));
-					bet.setBetweenExpressionStart(new DateValue(bet.getBetweenExpressionStart().toString().replace("'", "")));
+				if (SQLDataType.DATE.equals(colSqlDataType)) {
+					bet.setBetweenExpressionEnd(
+							new DateValue(bet.getBetweenExpressionEnd().toString().replace("'", "")));
+					bet.setBetweenExpressionStart(
+							new DateValue(bet.getBetweenExpressionStart().toString().replace("'", "")));
 				}
 			}
 		}

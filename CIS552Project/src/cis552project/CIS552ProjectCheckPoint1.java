@@ -49,7 +49,7 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 
-public class CIS552Project {
+public class CIS552ProjectCheckPoint1 {
 
 	static String dataPath = null;
 	static String commandsLoc = null;

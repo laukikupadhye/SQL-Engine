@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,7 +50,7 @@ public class CIS552ProjectUtils {
         return resultRows;
 
     }
-
+    
     public static List<String> readCommands(String filePath) throws IOException {
         List<String> commandsList = new ArrayList<>();
         try (FileReader file = new FileReader(filePath)) {

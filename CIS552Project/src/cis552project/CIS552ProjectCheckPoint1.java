@@ -55,9 +55,6 @@ public class CIS552ProjectCheckPoint1 {
 	static String commandsLoc = null;
 	static Map<String, TableColumnData> tables = new HashMap<>();
 
-	/**
-	 * @param args the command line arguments
-	 */
 	public static void main(String[] args) {
 		commandsLoc = args[0];
 		dataPath = args[1];
@@ -85,7 +82,7 @@ public class CIS552ProjectCheckPoint1 {
 				}
 			}
 		} catch (IOException e) {
-			
+
 			System.out.println("Commands location was not identified. Please see the below exception.");
 			System.out.println("Exception : " + e.getLocalizedMessage());
 		}
@@ -240,7 +237,7 @@ public class CIS552ProjectCheckPoint1 {
 				}
 				continue firstLoop;
 			}
-		finalResultList.add(result);
+			finalResultList.add(result);
 		}
 
 		return finalResultList;
@@ -325,7 +322,7 @@ public class CIS552ProjectCheckPoint1 {
 
 	private static List<String[]> solveSelectItemExpression(List<String[]> rowsResult, List<SelectItem> selectItems,
 			List<FromItem> fromItems, Map<String, String> aliasandTableName, Map<String, Integer> colPosWithTableAlias)
-					throws SQLException {
+			throws SQLException {
 		List<String[]> finalResult = new ArrayList<>();
 		if (selectItems.get(0) instanceof AllColumns) {
 			return rowsResult;
@@ -372,13 +369,13 @@ public class CIS552ProjectCheckPoint1 {
 	private static void printResult(List<String[]> rowsResult) throws SQLException {
 		for (String[] result : rowsResult) {
 			System.out.println(String.join("|", result));
-			//			for (int i = 0; i < result.length; i++) {
-			//				System.out.print(result[i]);
-			//				if (i < result.length - 1) {
-			//					System.out.print("|");
-			//				}
-			//			}
-			//			System.out.println("");
+			// for (int i = 0; i < result.length; i++) {
+			// System.out.print(result[i]);
+			// if (i < result.length - 1) {
+			// System.out.print("|");
+			// }
+			// }
+			// System.out.println("");
 		}
 	}
 

@@ -1,3 +1,2 @@
 CREATE TABLE R (A int, B int);
-CREATE TABLE S (A int, B int);
-select count(*) from R re Union select count(*) from S se;
+select * from R as re where re.A = 4;

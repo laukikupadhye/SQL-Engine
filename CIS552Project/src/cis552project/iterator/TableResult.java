@@ -14,7 +14,7 @@ import net.sf.jsqlparser.statement.select.FromItem;
 public class TableResult {
 
 	public Map<Column, Integer> colPosWithTableAlias = new HashedMap<>();
-	public List<String[]> resultTuples = new ArrayList<>();
+	public List<Tuple> resultTuples = new ArrayList<>();
 	public Map<String, String> aliasandTableName = new HashMap<>();
 	public List<FromItem> fromItems = new ArrayList<>();
 

@@ -81,16 +81,15 @@ public class SelectItemIT extends BaseIT {
 							.collect(Collectors.toList()));
 				}
 			}
-			for (String[] resultRow : oldTableResult.resultTuples) {
+			for (Tuple resultTuple : oldTableResult.resultTuples) {
 				String[] primValToString = new String[finalExpItemList.size()];
 				for (int i = 0; i < finalExpItemList.size(); i++) {
-
-					PrimitiveValue value = ExpressionEvaluator.applyCondition(resultRow, finalExpItemList.get(i),
-							newTableResult, cis552SO);
+					PrimitiveValue value = ExpressionEvaluator.applyCondition(resultTuple.resultRow,
+							finalExpItemList.get(i), newTableResult, cis552SO);
 					primValToString[i] = value.toRawString();
 
 				}
-				newTableResult.resultTuples.add(primValToString);
+				newTableResult.resultTuples.add(new Tuple(primValToString));
 			}
 		}
 

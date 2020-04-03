@@ -2,7 +2,5 @@ CREATE TABLE R (A int, B int);
 CREATE TABLE S (A int, B int);
 CREATE TABLE PLAYERS(ID string, FIRSTNAME string, LASTNAME string, FIRSTSEASON int, LASTSEASON int, WEIGHT int, BIRTHDATE date);
 
-SELECT *
-    FROM PLAYERS P1, PLAYERS P2 
-  WHERE P1.ID<>P2.ID;
+SELECT distinct * from R where R.A = 4;
 

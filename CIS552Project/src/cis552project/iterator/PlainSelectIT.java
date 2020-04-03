@@ -15,12 +15,15 @@ public class PlainSelectIT extends BaseIT {
 				BaseIT result2 = new FromItemIT(join.getRightItem(), cis552SO);
 				result = new JoinIT(result, result2);
 			}
-			result = new WhereIT(plainSelect.getWhere(), result, cis552SO);
 		}
 		if (plainSelect.getWhere() != null) {
 			result = new WhereIT(plainSelect.getWhere(), result, cis552SO);
 		}
 		result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
+		if (plainSelect.getDistinct() != null) {
+			result = new DistinctIT(result);
+		}
+
 	}
 
 	@Override

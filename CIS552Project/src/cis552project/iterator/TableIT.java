@@ -42,8 +42,8 @@ public class TableIT extends BaseIT {
 
 	@Override
 	public TableResult getNext() {
-		List<String[]> resultRows = new ArrayList<>();
-		resultRows.add(fileScanner.nextLine().split("\\|"));
+		List<Tuple> resultRows = new ArrayList<>();
+		resultRows.add(new Tuple(fileScanner.nextLine().split("\\|")));
 		tableRes.resultTuples = resultRows;
 		return tableRes;
 	}

@@ -23,12 +23,13 @@ public class WhereIT extends BaseIT {
 	@Override
 	public TableResult getNext() {
 		TableResult tableResult = result.getNext();
-		List<String[]> finalResult = new ArrayList<>();
-		for (String[] eachRow : tableResult.resultTuples) {
+		List<Tuple> finalResult = new ArrayList<>();
+		for (Tuple eachTuple : tableResult.resultTuples) {
 			try {
-				PrimitiveValue primValue = ExpressionEvaluator.applyCondition(eachRow, where, tableResult, cis552SO);
+				PrimitiveValue primValue = ExpressionEvaluator.applyCondition(eachTuple.resultRow, where, tableResult,
+						cis552SO);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
-					finalResult.add(eachRow);
+					finalResult.add(eachTuple);
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();

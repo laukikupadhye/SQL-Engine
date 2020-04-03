@@ -12,6 +12,7 @@ import java.util.List;
 
 import cis552project.iterator.BaseIT;
 import cis552project.iterator.SelectBodyIT;
+import cis552project.iterator.Tuple;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Table;
@@ -64,9 +65,9 @@ public class CIS552Project {
 		cis552SO.tables.put(tableName, tableColData);
 	}
 
-	private static void printResult(List<String[]> rowsResult) {
-		for (String[] result : rowsResult) {
-			System.out.println(String.join("|", result));
+	private static void printResult(List<Tuple> resultTuples) {
+		for (Tuple resultTuple : resultTuples) {
+			System.out.println(String.join("|", resultTuple.resultRow));
 		}
 	}
 }

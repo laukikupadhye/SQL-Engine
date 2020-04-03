@@ -10,8 +10,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 
-import iterator.BaseIT;
-import iterator.SelectIT;
+import cis552project.iterator.BaseIT;
+import cis552project.iterator.SelectBodyIT;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Table;
@@ -22,9 +22,9 @@ import net.sf.jsqlparser.statement.select.Select;
 public class CIS552Project {
 
 	public static void main(String[] args) {
-		CIS552SO cis552so = new CIS552SO();
+		CIS552SO cis552SO = new CIS552SO();
 		String commandsLoc = args[0];
-		cis552so.dataPath = args[1];
+		cis552SO.dataPath = args[1];
 
 		try {
 			List<String> commands = CIS552ProjectUtils.readCommands(commandsLoc);
@@ -34,12 +34,13 @@ public class CIS552Project {
 					Statement statement = parser.Statement();
 
 					if (statement instanceof CreateTable) {
-						createTable(statement, cis552so);
+						createTable(statement, cis552SO);
 						System.out.println("Table Create Successfully");
 					} else if (statement instanceof Select) {
-						BaseIT result = new SelectIT((Select) statement, cis552so);
+						Select select = (Select) statement;
+						BaseIT result = new SelectBodyIT(select.getSelectBody(), cis552SO);
 						while (result.hasNext()) {
-							printResult(result.getNext().getResultTuples());
+							printResult(result.getNext().resultTuples);
 						}
 					}
 				} catch (ParseException e) {
@@ -56,11 +57,11 @@ public class CIS552Project {
 
 	}
 
-	private static void createTable(Statement statement, CIS552SO cis552so) {
+	private static void createTable(Statement statement, CIS552SO cis552SO) {
 		CreateTable createTable = (CreateTable) statement;
 		String tableName = createTable.getTable().getName();
 		TableColumnData tableColData = new TableColumnData(new Table(tableName), createTable.getColumnDefinitions());
-		cis552so.tables.put(tableName, tableColData);
+		cis552SO.tables.put(tableName, tableColData);
 	}
 
 	private static void printResult(List<String[]> rowsResult) {

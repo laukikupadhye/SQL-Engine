@@ -1,4 +1,4 @@
-package iterator;
+package cis552project.iterator;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -12,10 +12,10 @@ import net.sf.jsqlparser.schema.PrimitiveType;
 public class WhereIT extends BaseIT {
 	BaseIT result = null;
 	Expression where = null;
-	CIS552SO cis552so = null;
+	CIS552SO cis552SO = null;
 
-	public WhereIT(Expression where, BaseIT result, CIS552SO cis552so) {
-		this.cis552so = cis552so;
+	public WhereIT(Expression where, BaseIT result, CIS552SO cis552SO) {
+		this.cis552SO = cis552SO;
 		this.result = result;
 		this.where = where;
 	}
@@ -24,14 +24,13 @@ public class WhereIT extends BaseIT {
 	public TableResult getNext() {
 		TableResult tableResult = result.getNext();
 		List<String[]> finalResult = new ArrayList<>();
-		for (String[] eachRow : tableResult.getResultTuples()) {
+		for (String[] eachRow : tableResult.resultTuples) {
 			try {
-				PrimitiveValue primValue = ExpressionEvaluator.applyCondition(eachRow, where, tableResult, cis552so);
+				PrimitiveValue primValue = ExpressionEvaluator.applyCondition(eachRow, where, tableResult, cis552SO);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 					finalResult.add(eachRow);
 				}
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -50,8 +49,7 @@ public class WhereIT extends BaseIT {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-
+		result.reset();
 	}
 
 }

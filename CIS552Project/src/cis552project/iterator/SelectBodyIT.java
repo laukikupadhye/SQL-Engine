@@ -1,16 +1,16 @@
-package iterator;
+package cis552project.iterator;
 
 import cis552project.CIS552SO;
 import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectBody;
 
-public class SelectIT extends BaseIT {
+public class SelectBodyIT extends BaseIT {
 
 	BaseIT result = null;
 
-	public SelectIT(Select select, CIS552SO cis552so) {
-		if (select.getSelectBody() instanceof PlainSelect) {
-			result = new PlainSelectIT((PlainSelect) select.getSelectBody(), cis552so);
+	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) {
+		if (selectBody instanceof PlainSelect) {
+			result = new PlainSelectIT((PlainSelect) selectBody, cis552SO);
 		}
 	}
 
@@ -29,8 +29,7 @@ public class SelectIT extends BaseIT {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-
+		result.reset();
 	}
 
 }

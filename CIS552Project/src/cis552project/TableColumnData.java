@@ -6,6 +6,7 @@
 package cis552project;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,52 +17,29 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
 public class TableColumnData {
 
-    private Table table = new Table();
-    private List<ColumnDefinition> colDefList = new ArrayList<ColumnDefinition>();
-    private List<Column> colList =  new ArrayList<>();
-    private Map<String, Integer> colPosition = new HashMap<>();
-    private Map<String, ColumnDefinition> colDefMap = new HashMap<>();
+	public Table table = new Table();
+	public Collection<ColumnDefinition> colDefList = new ArrayList<>();
+	public List<Column> colList = new ArrayList<>();
+	public Map<String, ColumnDefinition> colDefMap = new HashMap<>();
 
-    public TableColumnData(Table table, List<ColumnDefinition> colDefList) {
-        this.table = table;
-        this.colDefList = colDefList;
-        int pos = 0;
-        for (ColumnDefinition colDef : colDefList) {
-        	String columnName = colDef.getColumnName();
-        	Column column = new Column(table, columnName);
-            colList.add(column);
-            colPosition.put(columnName, pos);
-            colDefMap.put(columnName,colDef);
-            pos++;
-        }
-    }
+	public TableColumnData(Table table, Collection<ColumnDefinition> colDefList) {
+		this.table = table;
+		this.colDefList = colDefList;
+		for (ColumnDefinition colDef : colDefList) {
+			String columnName = colDef.getColumnName();
+			Column column = new Column(table, columnName);
+			colList.add(column);
+			colDefMap.put(columnName, colDef);
+		}
+	}
 
-    public List<Column> getListofColumns() {
-        return colList;
-    }
-    
-    public int getColPosition(String colName) {
-        return colPosition.get(colName);
-    }
-    
-    public ColumnDefinition getColumnDefinition(String colName) { 
-        return colDefMap.get(colName);
-    }
-
-    public boolean containsColumn(String columnName) {
-    	for (Column col : colList) {
-			if(col.getColumnName().equals(columnName)) {
+	public boolean containsColumn(String columnName) {
+		for (Column col : colList) {
+			if (col.getColumnName().equals(columnName)) {
 				return true;
 			}
 		}
-    	return false;
-    }
+		return false;
+	}
 
-	public Table getTable() {
-		return table;
-	}
-	
-	public List<ColumnDefinition> getColDefList() {
-		return colDefList;
-	}
 }

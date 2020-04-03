@@ -1,16 +1,21 @@
-package iterator;
+package cis552project.iterator;
 
 import cis552project.CIS552SO;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.SubSelect;
 
 public class FromItemIT extends BaseIT {
 
 	BaseIT result = null;
 
-	public FromItemIT(FromItem fromItem, CIS552SO cis552so) {
+	public FromItemIT(FromItem fromItem, CIS552SO cis552SO) {
 		if (fromItem instanceof Table) {
-			result = new TableIT((Table) fromItem, cis552so);
+			result = new TableIT((Table) fromItem, cis552SO);
+		}
+
+		if (fromItem instanceof SubSelect) {
+			result = new SubSelectIT((SubSelect) fromItem, cis552SO);
 		}
 	}
 
@@ -29,8 +34,7 @@ public class FromItemIT extends BaseIT {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-
+		result.reset();
 	}
 
 }

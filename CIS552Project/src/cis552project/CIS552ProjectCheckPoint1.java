@@ -55,7 +55,7 @@ public class CIS552ProjectCheckPoint1 {
 	static String commandsLoc = null;
 	static Map<String, TableColumnData> tables = new HashMap<>();
 
-	public static void main(String[] args) {
+	public static void testmain(String[] args) {
 		commandsLoc = args[0];
 		dataPath = args[1];
 
@@ -249,7 +249,7 @@ public class CIS552ProjectCheckPoint1 {
 		if (selectItems.get(0) instanceof AllColumns) {
 			for (FromItem fromItem : fromItems) {
 				TableColumnData tableSchema = tables.get(((Table) fromItem).getName());
-				colDefList.addAll(tableSchema.getColDefList());
+				colDefList.addAll(tableSchema.colDefList);
 			}
 		} else {
 			for (SelectItem si : selectItems) {
@@ -274,8 +274,7 @@ public class CIS552ProjectCheckPoint1 {
 		ColumnDefinition colDef = null;
 		if (exp instanceof Column) {
 			Column column = (Column) exp;
-			colDef = getTableSchemaForColumnFromFromItems(column, fromItems)
-					.getColumnDefinition(column.getColumnName());
+			colDef = getTableSchemaForColumnFromFromItems(column, fromItems).colDefMap.get(column.getColumnName());
 		}
 		if (exp instanceof Addition) {
 			Addition add = (Addition) exp;
@@ -311,9 +310,8 @@ public class CIS552ProjectCheckPoint1 {
 	private static void addColPosWithTabAlias(String tableName, String aliasName,
 			Map<String, Integer> colPosWithTableAlias) {
 		TableColumnData selectTableTemp = tables.get(tableName);
-		List<Column> columnList = selectTableTemp.getListofColumns();
 		int colPos = colPosWithTableAlias.size();
-		for (Column col : columnList) {
+		for (Column col : selectTableTemp.colList) {
 			String colTableMap = aliasName + "." + col.getColumnName();
 			colPosWithTableAlias.put(colTableMap, colPos);
 			colPos++;
@@ -347,7 +345,7 @@ public class CIS552ProjectCheckPoint1 {
 				AllTableColumns allTableColumn = (AllTableColumns) selectItem;
 				TableColumnData tableSchema = tables.get(aliasandTableName.get(allTableColumn.getTable().getName()));
 
-				finalExpItemList.addAll(tableSchema.getListofColumns().stream()
+				finalExpItemList.addAll(tableSchema.colList.stream()
 						.map(col -> (Expression) new Column(allTableColumn.getTable(), col.getColumnName()))
 						.collect(Collectors.toList()));
 			}
@@ -390,11 +388,11 @@ public class CIS552ProjectCheckPoint1 {
 					if (getTableSchemaForColumnFromFromItems(column, fromItems) == null) {
 						System.out.println();
 					}
-					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
+					table = getTableSchemaForColumnFromFromItems(column, fromItems).table;
 					column.setTable(table);
 				}
 				String tableName = aliasandTableName.get(table.getName());
-				colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
+				colDef = tables.get(tableName).colDefMap.get(column.getColumnName());
 				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
 
 				int pos = colPosWithTableAlias.get(column.getWholeColumnName());
@@ -430,10 +428,10 @@ public class CIS552ProjectCheckPoint1 {
 				Table table = column.getTable();
 				ColumnDefinition colDef = null;
 				if (table == null || table.getName() == null) {
-					table = getTableSchemaForColumnFromFromItems(column, fromItems).getTable();
+					table = getTableSchemaForColumnFromFromItems(column, fromItems).table;
 				}
 				String tableName = aliasandTableName.get(table.getName());
-				colDef = tables.get(tableName).getColumnDefinition(column.getColumnName());
+				colDef = tables.get(tableName).colDefMap.get(column.getColumnName());
 				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
 				if (SQLDataType.DATE.equals(colSqlDataType)) {
 					bet.setBetweenExpressionEnd(

@@ -1,4 +1,4 @@
-package iterator;
+package cis552project.iterator;
 
 public abstract class BaseIT {
 

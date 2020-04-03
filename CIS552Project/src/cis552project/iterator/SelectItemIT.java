@@ -61,12 +61,11 @@ public class SelectItemIT extends BaseIT {
 	private TableResult solveSelectItemExpression() throws SQLException {
 
 		TableResult oldTableResult = result.getNext();
-		TableResult newTableResult = oldTableResult;
-		updateColDefMap(oldTableResult.fromItems, newTableResult);
+		TableResult newTableResult = new TableResult();
+		updateColDefMap(oldTableResult, newTableResult);
 		if (selectItems.get(0) instanceof AllColumns) {
 			newTableResult.resultTuples = oldTableResult.resultTuples;
 		} else {
-			newTableResult.resultTuples = new ArrayList<>();
 			List<Expression> finalExpItemList = new ArrayList<>();
 			for (SelectItem selectItem : selectItems) {
 				if (selectItem instanceof SelectExpressionItem) {
@@ -89,6 +88,8 @@ public class SelectItemIT extends BaseIT {
 					primValToString[i] = value.toRawString();
 
 				}
+
+				newTableResult.resultTuples = new ArrayList<>();
 				newTableResult.resultTuples.add(new Tuple(primValToString));
 			}
 		}
@@ -96,11 +97,12 @@ public class SelectItemIT extends BaseIT {
 		return newTableResult;
 	}
 
-	private void updateColDefMap(List<FromItem> fromItems, TableResult tableResult) {
+	private void updateColDefMap(TableResult oldTableResult, TableResult newTableResult) {
 		if (selectItems.get(0) instanceof AllColumns) {
-			for (FromItem fromItem : fromItems) {
+			for (FromItem fromItem : oldTableResult.fromItems) {
 				TableColumnData tableSchema = cis552SO.tables.get(((Table) fromItem).getName());
-				tableResult.colDefMap.putAll(tableSchema.colDefMap);
+				newTableResult.colDefMap.putAll(tableSchema.colDefMap);
+				newTableResult.colPosWithTableAlias.putAll(oldTableResult.colPosWithTableAlias);
 			}
 		} else {
 			for (SelectItem si : selectItems) {
@@ -110,14 +112,15 @@ public class SelectItemIT extends BaseIT {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression exp = sei.getExpression();
 					ColumnDefinition colDef = new ColumnDefinition();
-					ColumnDefinition oldColDef = getColDefOfExpression(exp, fromItems);
+					ColumnDefinition oldColDef = getColDefOfExpression(exp, oldTableResult.fromItems);
 					colDef.setColDataType(oldColDef.getColDataType());
 
 					String columnAlias = sei.getAlias() != null ? sei.getAlias() : oldColDef.getColumnName();
 					colDef.setColumnName(columnAlias);
 					colDef.setColumnSpecStrings(oldColDef.getColumnSpecStrings());
-					tableResult.colDefMap.put(columnAlias, colDef);
-
+					newTableResult.colDefMap.put(columnAlias, colDef);
+					newTableResult.colPosWithTableAlias.put(new Column(null, columnAlias),
+							oldTableResult.colPosWithTableAlias.get(new Column(null, oldColDef.getColumnName())));
 				}
 			}
 		}

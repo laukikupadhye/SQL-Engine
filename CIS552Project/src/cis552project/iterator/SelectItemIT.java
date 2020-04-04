@@ -84,7 +84,7 @@ public class SelectItemIT extends BaseIT {
 				String[] primValToString = new String[finalExpItemList.size()];
 				for (int i = 0; i < finalExpItemList.size(); i++) {
 					PrimitiveValue value = ExpressionEvaluator.applyCondition(resultTuple.resultRow,
-							finalExpItemList.get(i), newTableResult, cis552SO);
+							finalExpItemList.get(i), oldTableResult, cis552SO);
 					primValToString[i] = value.toRawString();
 
 				}
@@ -105,6 +105,7 @@ public class SelectItemIT extends BaseIT {
 				newTableResult.colPosWithTableAlias.putAll(oldTableResult.colPosWithTableAlias);
 			}
 		} else {
+			int pos = 0;
 			for (SelectItem si : selectItems) {
 				if (si instanceof AllTableColumns) {
 
@@ -119,9 +120,9 @@ public class SelectItemIT extends BaseIT {
 					colDef.setColumnName(columnAlias);
 					colDef.setColumnSpecStrings(oldColDef.getColumnSpecStrings());
 					newTableResult.colDefMap.put(columnAlias, colDef);
-					newTableResult.colPosWithTableAlias.put(new Column(null, columnAlias),
-							oldTableResult.colPosWithTableAlias.get(new Column(null, oldColDef.getColumnName())));
+					newTableResult.colPosWithTableAlias.put(new Column(null, columnAlias), pos);
 				}
+				pos++;
 			}
 		}
 	}

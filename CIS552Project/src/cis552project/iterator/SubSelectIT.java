@@ -52,7 +52,7 @@ public class SubSelectIT extends BaseIT {
 		String tableName = subSelect.getAlias();
 		newTableResult.fromItems.add(new Table(tableName));
 		newTableResult.aliasandTableName.put(tableName, tableName);
-
+		newTableResult.colDefMap.putAll(oldTableResult.colDefMap);
 		TableColumnData tableSchema = new TableColumnData(new Table(tableName), oldTableResult.colDefMap.values());
 		for (Entry<Column, Integer> entrySet : oldTableResult.colPosWithTableAlias.entrySet()) {
 			Column column = new Column(new Table(tableName), entrySet.getKey().getColumnName());

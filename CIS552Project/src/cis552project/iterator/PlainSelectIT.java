@@ -19,6 +19,14 @@ public class PlainSelectIT extends BaseIT {
 		if (plainSelect.getWhere() != null) {
 			result = new WhereIT(plainSelect.getWhere(), result, cis552SO);
 		}
+
+		if (plainSelect.getGroupByColumnReferences() != null) {
+			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), result, cis552SO);
+		}
+		if (plainSelect.getLimit() != null) {
+			// implement limit
+			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), result, cis552SO);
+		}
 		result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
 		if (plainSelect.getDistinct() != null) {
 			result = new DistinctIT(result);

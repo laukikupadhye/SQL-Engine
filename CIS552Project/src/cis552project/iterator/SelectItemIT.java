@@ -3,6 +3,7 @@ package cis552project.iterator;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import cis552project.CIS552SO;
@@ -73,7 +74,7 @@ public class SelectItemIT extends BaseIT {
 				} else if (selectItem instanceof AllTableColumns) {
 					AllTableColumns allTableColumn = (AllTableColumns) selectItem;
 					TableColumnData tableSchema = cis552SO.tables
-							.get(newTableResult.aliasandTableName.get(allTableColumn.getTable().getName()));
+							.get(oldTableResult.aliasandTableName.get(allTableColumn.getTable().getName()));
 
 					finalExpItemList.addAll(tableSchema.colList.stream()
 							.map(col -> (Expression) new Column(allTableColumn.getTable(), col.getColumnName()))
@@ -98,17 +99,24 @@ public class SelectItemIT extends BaseIT {
 	}
 
 	private void updateColDefMap(TableResult oldTableResult, TableResult newTableResult) {
+		newTableResult.fromItems.addAll(oldTableResult.fromItems);
+		newTableResult.aliasandTableName.putAll(oldTableResult.aliasandTableName);
 		if (selectItems.get(0) instanceof AllColumns) {
 			for (FromItem fromItem : oldTableResult.fromItems) {
-				TableColumnData tableSchema = cis552SO.tables.get(((Table) fromItem).getName());
-				newTableResult.colDefMap.putAll(tableSchema.colDefMap);
+				TableColumnData tableColData = cis552SO.tables.get(((Table) fromItem).getName());
+				newTableResult.colDefMap.putAll(tableColData.colDefMap);
 				newTableResult.colPosWithTableAlias.putAll(oldTableResult.colPosWithTableAlias);
 			}
 		} else {
 			int pos = 0;
 			for (SelectItem si : selectItems) {
 				if (si instanceof AllTableColumns) {
-
+					AllTableColumns atcSi = (AllTableColumns) si;
+					TableColumnData tableColData = cis552SO.tables.get(atcSi.getTable().getName());
+					newTableResult.colDefMap.putAll(tableColData.colDefMap);
+					for (Entry<Column, Integer> entrySet : oldTableResult.colPosWithTableAlias.entrySet()) {
+						newTableResult.colPosWithTableAlias.put(entrySet.getKey(), pos);
+					}
 				} else if (si instanceof SelectExpressionItem) {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression exp = sei.getExpression();

@@ -3,17 +3,15 @@ package cis552project.iterator;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import cis552project.CIS552SO;
 import cis552project.SQLDataType;
 import cis552project.TableColumnData;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
-import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
-import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -22,39 +20,20 @@ import net.sf.jsqlparser.statement.select.FromItem;
 
 public class ExpressionEvaluator {
 
-	public static PrimitiveValue applyCondition(String[] rowResult, Expression where, TableResult tabResult,
+	public static PrimitiveValue applyCondition(PrimitiveValue[] rowResult, Expression where, TableResult tabResult,
 			CIS552SO cis552SO) throws SQLException {
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column column) throws SQLException {
 				Table table = column.getTable();
-				ColumnDefinition colDef = null;
 				if (table == null || table.getName() == null) {
-					if (getTableSchemaForColumnFromFromItems(column, tabResult.fromItems, cis552SO) == null) {
-					}
-					table = getTableSchemaForColumnFromFromItems(column, tabResult.fromItems, cis552SO).table;
+//					table = getTableSchemaForColumnFromFromItems(column, tabResult.fromItems, cis552SO).table;
+					table = getTable(column, tabResult.colPosWithTableAlias.keySet(), cis552SO);
 					column.setTable(table);
 				}
-				String tableName = tabResult.aliasandTableName.get(table.getName());
-				colDef = cis552SO.tables.get(tableName).colDefMap.get(column.getColumnName());
-				SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
 
 				int pos = tabResult.colPosWithTableAlias.get(column);
-				String value = rowResult[pos];
-				switch (colSqlDataType) {
-				case CHAR:
-				case VARCHAR:
-				case STRING:
-					return new StringValue(value);
-				case DATE:
-					return new DateValue(value);
-				case DECIMAL:
-					return new DoubleValue(value);
-				case INT:
-					return new LongValue(value);
-				}
-				throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods,
-				// choose Tools | Templates.
+				return rowResult[pos];
 			}
 
 		};
@@ -96,6 +75,15 @@ public class ExpressionEvaluator {
 				if (tableSchema.containsColumn(column.getColumnName())) {
 					return tableSchema;
 				}
+			}
+		}
+		return null;
+	}
+
+	protected static Table getTable(Column column, Set<Column> cloumnSet, CIS552SO cis552SO) {
+		for (Column col : cloumnSet) {
+			if (column.getColumnName().equals(col.getColumnName())) {
+				return col.getTable();
 			}
 		}
 		return null;

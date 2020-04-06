@@ -3,6 +3,7 @@ package cis552project.iterator;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 
 public class JoinIT extends BaseIT {
@@ -43,7 +44,7 @@ public class JoinIT extends BaseIT {
 		for (Tuple table1ResultTuple : tableResult1.resultTuples) {
 			for (Tuple table2ResultTuple : tableResult2.resultTuples) {
 				int length = table1ResultTuple.resultRow.length + table2ResultTuple.resultRow.length;
-				String[] result = new String[length];
+				PrimitiveValue[] result = new PrimitiveValue[length];
 				System.arraycopy(table1ResultTuple.resultRow, 0, result, 0, table1ResultTuple.resultRow.length);
 				System.arraycopy(table2ResultTuple.resultRow, 0, result, table1ResultTuple.resultRow.length,
 						table2ResultTuple.resultRow.length);

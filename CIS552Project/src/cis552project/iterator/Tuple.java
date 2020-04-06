@@ -2,11 +2,13 @@ package cis552project.iterator;
 
 import java.util.Arrays;
 
+import net.sf.jsqlparser.expression.PrimitiveValue;
+
 public class Tuple {
 
-	public String[] resultRow = null;
+	public PrimitiveValue[] resultRow = null;
 
-	public Tuple(String[] resultRow) {
+	public Tuple(PrimitiveValue[] resultRow) {
 		this.resultRow = resultRow;
 	}
 
@@ -30,6 +32,15 @@ public class Tuple {
 		if (!Arrays.equals(resultRow, other.resultRow))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		String[] resultString = new String[resultRow.length];
+		for (int i = 0; i < resultRow.length; i++) {
+			resultString[i] = resultRow[i].toRawString();
+		}
+		return String.join("|", resultString);
 	}
 
 }

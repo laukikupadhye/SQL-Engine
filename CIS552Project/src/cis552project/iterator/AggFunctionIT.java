@@ -1,16 +1,23 @@
 package cis552project.iterator;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class DistinctIT extends BaseIT {
+import cis552project.CIS552SO;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.PrimitiveValue;
+
+public class AggFunctionIT extends BaseIT {
 
 	TableResult finalTableResult = null;
 	Iterator<Tuple> resIT = null;
 	List<Tuple> finalResultTuples = null;
+	CIS552SO cis552so = null;
 
-	public DistinctIT(BaseIT result) {
+	public AggFunctionIT(Function funExp, BaseIT result, CIS552SO cis552so, String columnAlias) {
+		this.cis552so = cis552so;
 		List<Tuple> resultTuples = new ArrayList<>();
 		while (result.hasNext()) {
 			TableResult initialTabRes = result.getNext();
@@ -23,9 +30,16 @@ public class DistinctIT extends BaseIT {
 			}
 			resultTuples.addAll(initialTabRes.resultTuples);
 		}
-		finalResultTuples = applyDistinct(resultTuples);
+		try {
+			long resultValue = FunctionEvaluation.applyFunction(resultTuples, funExp, finalTableResult, cis552so);
+			finalResultTuples = new ArrayList<>();
+			PrimitiveValue pv = new net.sf.jsqlparser.expression.LongValue(resultValue);
+			PrimitiveValue[] pvArray = { pv };
+			finalResultTuples.add(new Tuple(pvArray));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		resIT = finalResultTuples.iterator();
-
 	}
 
 	@Override
@@ -43,21 +57,6 @@ public class DistinctIT extends BaseIT {
 	@Override
 	public void reset() {
 		resIT = finalResultTuples.iterator();
-	}
-
-	private static List<Tuple> applyDistinct(List<Tuple> initialResult) {
-		List<Tuple> finalResultList = new ArrayList<>();
-		firstLoop: for (Tuple result : initialResult) {
-			secondLoop: for (Tuple finalResult : finalResultList) {
-				if (!result.equals(finalResult)) {
-					continue secondLoop;
-				}
-				continue firstLoop;
-			}
-			finalResultList.add(result);
-		}
-
-		return finalResultList;
 	}
 
 }

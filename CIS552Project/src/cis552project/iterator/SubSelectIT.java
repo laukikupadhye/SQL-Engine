@@ -3,7 +3,6 @@ package cis552project.iterator;
 import java.util.Map.Entry;
 
 import cis552project.CIS552SO;
-import cis552project.TableColumnData;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.SelectBody;
@@ -52,13 +51,13 @@ public class SubSelectIT extends BaseIT {
 		String tableName = subSelect.getAlias();
 		newTableResult.fromItems.add(new Table(tableName));
 		newTableResult.aliasandTableName.put(tableName, tableName);
-		newTableResult.colDefMap.putAll(oldTableResult.colDefMap);
-		TableColumnData tableSchema = new TableColumnData(new Table(tableName), oldTableResult.colDefMap.values());
+//		newTableResult.colDefMap.putAll(oldTableResult.colDefMap);
+//		TableColumnData tableSchema = new TableColumnData(new Table(tableName), oldTableResult.colDefMap.values());
 		for (Entry<Column, Integer> entrySet : oldTableResult.colPosWithTableAlias.entrySet()) {
 			Column column = new Column(new Table(tableName), entrySet.getKey().getColumnName());
 			newTableResult.colPosWithTableAlias.put(column, entrySet.getValue());
 		}
-		cis552SO.tables.put(tableName, tableSchema);
+//		cis552SO.tables.put(tableName, tableSchema);
 	}
 
 }

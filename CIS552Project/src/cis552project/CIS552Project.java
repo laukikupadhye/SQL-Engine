@@ -67,7 +67,7 @@ public class CIS552Project {
 
 	private static void printResult(List<Tuple> resultTuples) {
 		for (Tuple resultTuple : resultTuples) {
-			System.out.println(String.join("|", resultTuple.resultRow));
+			System.out.println(resultTuple.toString());
 		}
 	}
 }

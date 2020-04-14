@@ -1,6 +1,7 @@
 package cis552project.iterator;
 
 import cis552project.CIS552SO;
+import java.sql.SQLException;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 
@@ -8,7 +9,7 @@ public class SelectBodyIT extends BaseIT {
 
 	BaseIT result = null;
 
-	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) {
+	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) throws SQLException {
 		if (selectBody instanceof PlainSelect) {
 			result = new PlainSelectIT((PlainSelect) selectBody, cis552SO);
 		}

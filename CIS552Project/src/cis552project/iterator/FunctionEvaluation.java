@@ -10,10 +10,11 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
-
+import net.sf.jsqlparser.expression.DoubleValue;
+        
 public class FunctionEvaluation {
 
-	public static long applyFunction(List<Tuple> initialResult, Function funExp, TableResult finalTableResult,
+	public static PrimitiveValue applyFunction(List<Tuple> initialResult, Function funExp, TableResult finalTableResult,
 			CIS552SO cis552so) throws SQLException {
 		String funName = funExp.getName().toUpperCase();
 		ExpressionList expressionList = funExp.getParameters();
@@ -25,7 +26,8 @@ public class FunctionEvaluation {
 		case "AVG":
 			return evaluateAvg(initialResult, funExp, expressionList, finalTableResult, cis552so);
 		case "MIN":
-			return evaluateMin(initialResult, funExp, expressionList, finalTableResult, cis552so);
+			PrimitiveValue test=evaluateMin(initialResult, funExp, expressionList, finalTableResult, cis552so);
+                        return test;
 		case "MAX":
 			return evaluateMax(initialResult, funExp, expressionList, finalTableResult, cis552so);
 		}
@@ -33,65 +35,68 @@ public class FunctionEvaluation {
 		throw new UnsupportedOperationException(funName + " Not supported yet.");
 	}
 
-	private static long evaluateCount(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
+	private static PrimitiveValue evaluateCount(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		if (funExp.isAllColumns()) {
-			return initialResult.size();
+			return new LongValue(initialResult.size());
 		} else {
 			List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 					expressionList.getExpressions().get(0), finalTableResult, cis552so);
 
-			return pValueList.size();
+			return new LongValue(pValueList.size());
 
 		}
 	}
 
-	private static long evaluateSum(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
+	private static PrimitiveValue evaluateSum(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 				expressionList.getExpressions().get(0), finalTableResult, cis552so);
-		long sum = 0;
+		Double sum = null;
 		for (PrimitiveValue primitiveValue : pValueList) {
 			sum += ((LongValue) primitiveValue).getValue();
 		}
-		return sum;
+		return new DoubleValue(sum);
 	}
 
-	private static long evaluateAvg(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
+	private static PrimitiveValue evaluateAvg(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 				expressionList.getExpressions().get(0), finalTableResult, cis552so);
-		long sum = 0;
-		for (PrimitiveValue primitiveValue : pValueList) {
+		double sum = 0;
+		double avg=0;
+                for (PrimitiveValue primitiveValue : pValueList) {
 			sum += ((LongValue) primitiveValue).getValue();
 		}
-		return sum / pValueList.size();
+                avg = sum / pValueList.size();
+                PrimitiveValue returnVal=new DoubleValue(avg);
+		return returnVal;
 	}
 
-	private static long evaluateMin(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
+	private static PrimitiveValue evaluateMin(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 				expressionList.getExpressions().get(0), finalTableResult, cis552so);
-		long min = ((LongValue) pValueList.get(0)).getValue();
+		double  min = pValueList.get(0).toDouble();
 		for (PrimitiveValue primitiveValue : pValueList) {
-			if (min <= ((LongValue) primitiveValue).getValue())
+			if (min <= primitiveValue.toDouble())
 				continue;
-			min = ((LongValue) primitiveValue).getValue();
+			min = primitiveValue.toDouble();
 		}
-		return min;
+		return new DoubleValue(min);
 	}
 
-	private static long evaluateMax(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
+	private static PrimitiveValue evaluateMax(List<Tuple> initialResult, Function funExp, ExpressionList expressionList,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 				expressionList.getExpressions().get(0), finalTableResult, cis552so);
-		long max = ((LongValue) pValueList.get(0)).getValue();
+		double max = ((DoubleValue) pValueList.get(0)).getValue();
 		for (PrimitiveValue primitiveValue : pValueList) {
-			if (max >= ((LongValue) primitiveValue).getValue())
+			if (max >= ((DoubleValue) primitiveValue).getValue())
 				continue;
-			max = ((LongValue) primitiveValue).getValue();
+			max = ((DoubleValue) primitiveValue).getValue();
 		}
-		return max;
+		return new DoubleValue(max);
 	}
 
 	private static List<PrimitiveValue> fetchEvaluatedExpressions(List<Tuple> initialResult, Expression expression,

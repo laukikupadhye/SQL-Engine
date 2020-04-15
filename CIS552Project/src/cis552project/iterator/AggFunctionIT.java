@@ -31,10 +31,10 @@ public class AggFunctionIT extends BaseIT {
 			resultTuples.addAll(initialTabRes.resultTuples);
 		}
 		try {
-			long resultValue = FunctionEvaluation.applyFunction(resultTuples, funExp, finalTableResult, cis552so);
+			PrimitiveValue resultValue = FunctionEvaluation.applyFunction(resultTuples, funExp, finalTableResult,
+					cis552so);
 			finalResultTuples = new ArrayList<>();
-			PrimitiveValue pv = new net.sf.jsqlparser.expression.LongValue(resultValue);
-			PrimitiveValue[] pvArray = { pv };
+			PrimitiveValue[] pvArray = { resultValue };
 			finalResultTuples.add(new Tuple(pvArray));
 		} catch (SQLException e) {
 			e.printStackTrace();

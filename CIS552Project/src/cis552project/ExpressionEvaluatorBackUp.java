@@ -1,13 +1,11 @@
-package cis552project.iterator;
+package cis552project;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import cis552project.CIS552SO;
-import cis552project.SQLDataType;
-import cis552project.TableColumnData;
+import cis552project.iterator.TableResult;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
@@ -18,7 +16,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.FromItem;
 
-public class ExpressionEvaluator {
+public class ExpressionEvaluatorBackUp {
 
 	public static PrimitiveValue applyCondition(PrimitiveValue[] rowResult, Expression where, TableResult tabResult,
 			CIS552SO cis552SO) throws SQLException {

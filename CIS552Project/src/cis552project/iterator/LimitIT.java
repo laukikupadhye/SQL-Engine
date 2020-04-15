@@ -6,43 +6,43 @@
 package cis552project.iterator;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+
 import net.sf.jsqlparser.statement.select.Limit;
 
 /**
  *
  * @author anush
  */
-public class LimitIT extends BaseIT{
-   Limit limit;
-   long current_position = 0;
-   List<Tuple> resultTuples = new ArrayList<>();
-   BaseIT result = null;
-   
-        LimitIT(Limit limit, BaseIT result) {
-            this.limit = limit;
-            this.result = result;
-        }  
+public class LimitIT extends BaseIT {
+	Limit limit;
+	long current_position = 0;
+	List<Tuple> resultTuples = new ArrayList<>();
+	BaseIT result = null;
 
-    @Override
-    public TableResult getNext() {
-    current_position++;
-    return result.getNext();
-    }
+	LimitIT(Limit limit, BaseIT result) {
+		this.limit = limit;
+		this.result = result;
+	}
 
-    @Override
-    public boolean hasNext() {
-    if(current_position == limit.getRowCount() || result == null || !result.hasNext()){
-        return false;
-    }
-    return true;
-    }
+	@Override
+	public TableResult getNext() {
+		current_position++;
+		return result.getNext();
+	}
 
-    @Override
-    public void reset() {
-        current_position = 0;
-        result.reset();
-    }
-      
+	@Override
+	public boolean hasNext() {
+		if (current_position == limit.getRowCount() || result == null || !result.hasNext()) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public void reset() {
+		current_position = 0;
+		result.reset();
+	}
+
 }

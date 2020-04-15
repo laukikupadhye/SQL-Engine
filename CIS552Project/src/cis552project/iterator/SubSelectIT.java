@@ -1,5 +1,6 @@
 package cis552project.iterator;
 
+import java.sql.SQLException;
 import java.util.Map.Entry;
 
 import cis552project.CIS552SO;
@@ -15,7 +16,7 @@ public class SubSelectIT extends BaseIT {
 	CIS552SO cis552SO = null;
 	TableResult newTableResult = null;
 
-	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO) {
+	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO) throws SQLException {
 		this.subSelect = subSelect;
 		this.cis552SO = cis552SO;
 		SelectBody subSelectBody = subSelect.getSelectBody();

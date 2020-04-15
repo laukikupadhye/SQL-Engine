@@ -6,8 +6,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.FromItem;
 
 public class CIS552ProjectUtils {
 
@@ -64,6 +70,42 @@ public class CIS552ProjectUtils {
 		}
 
 		return commandsList;
+	}
+
+	public static TableColumnData getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems,
+			CIS552SO cis552SO) {
+		for (FromItem fromItem : fromItems) {
+			if (fromItem instanceof Table) {
+				Table table = (Table) fromItem;
+				TableColumnData tableSchema = cis552SO.tables.get(table.getName());
+				if (tableSchema.containsColumn(column.getColumnName())) {
+					return tableSchema;
+				}
+			}
+		}
+		return null;
+	}
+
+	public static Table getTable(Column column, Set<Column> cloumnSet, CIS552SO cis552SO) {
+		for (Column col : cloumnSet) {
+			if (column.getColumnName().equals(col.getColumnName())) {
+				return col.getTable();
+			}
+		}
+		return null;
+	}
+
+	public static Column determineColumnNameFromWholeName(String columnName, Map<String, String> aliasandTableName) {
+		Table table = null;
+		if (columnName.contains(".")) {
+			String aliasTableName = columnName.substring(0, columnName.indexOf("."));
+			columnName = columnName.substring(columnName.indexOf(".") + 1, columnName.length());
+			String tableName = aliasandTableName.get(aliasTableName);
+			table = new Table(tableName);
+			table.setAlias(aliasTableName);
+		}
+		return new Column(table, columnName);
+
 	}
 
 }

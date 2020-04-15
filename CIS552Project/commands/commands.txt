@@ -2,5 +2,4 @@ CREATE TABLE R (A int, B int);
 CREATE TABLE S (A int, B int);
 CREATE TABLE PLAYERS(ID string, FIRSTNAME string, LASTNAME string, FIRSTSEASON int, LASTSEASON int, WEIGHT int, BIRTHDATE date);
 
-select s.A where S s where s.A > (select max(A) as max from R);
-
+select R.A from R where NOT Exists (select * from S where R.A == S.A);

@@ -2,9 +2,12 @@ package cis552project.iterator;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import cis552project.CIS552SO;
+import cis552project.ExpressionEvaluator;
+import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.PrimitiveType;
@@ -26,8 +29,8 @@ public class WhereIT extends BaseIT {
 		List<Tuple> finalResult = new ArrayList<>();
 		for (Tuple eachTuple : tableResult.resultTuples) {
 			try {
-				PrimitiveValue primValue = ExpressionEvaluator.applyCondition(eachTuple.resultRow, where, tableResult,
-						cis552SO);
+				Eval eval = new ExpressionEvaluator(Arrays.asList(eachTuple), tableResult, cis552SO);
+				PrimitiveValue primValue = eval.eval(where);
 				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 					finalResult.add(eachTuple);
 				}

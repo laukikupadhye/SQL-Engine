@@ -8,6 +8,7 @@ package cis552project;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.sql.SQLException;
 import java.util.List;
 
 import cis552project.iterator.BaseIT;
@@ -44,7 +45,7 @@ public class CIS552Project {
 							printResult(result.getNext().resultTuples);
 						}
 					}
-				} catch (ParseException e) {
+				} catch (ParseException | SQLException e) {
 					System.out.println("Exception : " + e.getLocalizedMessage());
 				} finally {
 					System.out.println("=");

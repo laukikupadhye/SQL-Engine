@@ -36,6 +36,13 @@ public class PlainSelectIT extends BaseIT {
                 result = new DistinctIT(result);
             }
         }
+        if (plainSelect.getOrderByElements() != null) {
+            result = new OrderByIT(plainSelect.getOrderByElements(), result, cis552SO);
+        }
+        if (plainSelect.getLimit() != null) {
+            // implement limit
+            result = new LimitIT(plainSelect.getLimit(), result);
+        }
     }
 
     @Override

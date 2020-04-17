@@ -3,6 +3,8 @@ package cis552project.iterator;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 
@@ -20,11 +22,25 @@ public class JoinIT extends BaseIT {
 
 	@Override
 	public TableResult getNext() {
-		if (tableResult1 == null) {
+		return newTableResult;
+	}
+
+	@Override
+	public boolean hasNext() {
+
+		if (result1 == null || result2 == null) {
+			return false;
+		}
+
+		if (tableResult1 == null && result1.hasNext()) {
 			tableResult1 = result1.getNext();
 		}
+
 		if (!result2.hasNext()) {
 			result2.reset();
+			if (!result1.hasNext()) {
+				return false;
+			}
 			tableResult1 = result1.getNext();
 		}
 		TableResult tableResult2 = result2.getNext();
@@ -51,16 +67,7 @@ public class JoinIT extends BaseIT {
 				newTableResult.resultTuples.add(new Tuple(result));
 			}
 		}
-		return newTableResult;
-	}
-
-	@Override
-	public boolean hasNext() {
-
-		if (result1 == null || result2 == null || !result1.hasNext()) {
-			return false;
-		}
-		return true;
+		return CollectionUtils.isNotEmpty(newTableResult.resultTuples);
 	}
 
 	@Override

@@ -1,7 +1,11 @@
 package cis552project.iterator;
 
-import cis552project.CIS552SO;
 import java.sql.SQLException;
+import java.util.Map;
+
+import cis552project.CIS552SO;
+import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 
@@ -12,6 +16,13 @@ public class SelectBodyIT extends BaseIT {
 	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) throws SQLException {
 		if (selectBody instanceof PlainSelect) {
 			result = new PlainSelectIT((PlainSelect) selectBody, cis552SO);
+		}
+	}
+
+	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552so, Map<Column, PrimitiveValue> outerQueryColResult)
+			throws SQLException {
+		if (selectBody instanceof PlainSelect) {
+			result = new PlainSelectIT((PlainSelect) selectBody, cis552so, outerQueryColResult);
 		}
 	}
 

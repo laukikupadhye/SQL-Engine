@@ -1,9 +1,11 @@
 package cis552project.iterator;
 
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import cis552project.CIS552SO;
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.SelectBody;
@@ -21,6 +23,15 @@ public class SubSelectIT extends BaseIT {
 		this.cis552SO = cis552SO;
 		SelectBody subSelectBody = subSelect.getSelectBody();
 		result = new SelectBodyIT(subSelectBody, cis552SO);
+
+	}
+
+	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO, Map<Column, PrimitiveValue> outerQueryColResult)
+			throws SQLException {
+		this.subSelect = subSelect;
+		this.cis552SO = cis552SO;
+		SelectBody subSelectBody = subSelect.getSelectBody();
+		result = new SelectBodyIT(subSelectBody, cis552SO, outerQueryColResult);
 
 	}
 

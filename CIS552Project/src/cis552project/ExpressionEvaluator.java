@@ -16,17 +16,14 @@ import cis552project.iterator.TableResult;
 import cis552project.iterator.Tuple;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.BooleanValue;
-import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.PrimitiveValue;
-import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.expression.operators.relational.ExistsExpression;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.InExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 public class ExpressionEvaluator extends Eval {
@@ -66,31 +63,6 @@ public class ExpressionEvaluator extends Eval {
 			return outerQueryColResult.get(column);
 		}
 		return resultTuples.get(0).resultRow[tabResult.colPosWithTableAlias.get(column)];
-	}
-
-	@Override
-	public PrimitiveValue eval(Between between) throws SQLException {
-		if (between.getLeftExpression() instanceof Column) {
-
-			Column column = (Column) between.getLeftExpression();
-			Table table = column.getTable();
-			ColumnDefinition colDef = null;
-			if (table == null || table.getName() == null) {
-				table = CIS552ProjectUtils.getTableSchemaForColumnFromFromItems(column, tabResult.fromItems,
-						cis552SO).table;
-			}
-			String tableName = tabResult.aliasandTableName.get(table.getName());
-			colDef = cis552SO.tables.get(tableName).colDefMap.get(column.getColumnName());
-			SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
-			if (SQLDataType.DATE.equals(colSqlDataType)) {
-				between.setBetweenExpressionEnd(
-						new DateValue(between.getBetweenExpressionEnd().toString().replace("'", "")));
-				between.setBetweenExpressionStart(
-						new DateValue(between.getBetweenExpressionStart().toString().replace("'", "")));
-			}
-		}
-		return super.eval(between);
-
 	}
 
 	@Override
@@ -147,4 +119,45 @@ public class ExpressionEvaluator extends Eval {
 		}
 		return BooleanValue.FALSE;
 	}
+
+//	@Override
+//	public PrimitiveValue eval(Between between) throws SQLException {
+//		if (between.getLeftExpression() instanceof Column) {
+//			between.setBetweenExpressionStart(extractPrimitiveValueExpression((Column) between.getLeftExpression(),
+//					between.getBetweenExpressionStart()));
+//			between.setBetweenExpressionEnd(extractPrimitiveValueExpression((Column) between.getLeftExpression(),
+//					between.getBetweenExpressionEnd()));
+//		}
+//		return super.eval(between);
+//
+//	}
+//
+//	@Override
+//	public PrimitiveValue eval(GreaterThan greaterExp) throws SQLException {
+//		if (greaterExp.getLeftExpression() instanceof Column) {
+//			greaterExp.setRightExpression(extractPrimitiveValueExpression((Column) greaterExp.getLeftExpression(),
+//					greaterExp.getRightExpression()));
+//		}
+//		return super.eval(greaterExp);
+//	}
+//
+//	private Expression extractPrimitiveValueExpression(Column column, Expression expression) {
+//
+//		Table table = column.getTable();
+//		ColumnDefinition colDef = null;
+//		if (table == null || table.getName() == null) {
+//			table = CIS552ProjectUtils.getTableSchemaForColumnFromFromItems(column, tabResult.fromItems,
+//					cis552SO).table;
+//		}
+//		String tableName = tabResult.aliasandTableName.get(table.getName());
+//		colDef = cis552SO.tables.get(tableName).colDefMap.get(column.getColumnName());
+//		SQLDataType colSqlDataType = SQLDataType.valueOf(colDef.getColDataType().getDataType().toUpperCase());
+//		if (SQLDataType.DATE.equals(colSqlDataType)) {
+//			return new DateValue(expression.toString().replace("'", ""));
+//		}
+//
+//		return expression;
+//
+//	}
+
 }

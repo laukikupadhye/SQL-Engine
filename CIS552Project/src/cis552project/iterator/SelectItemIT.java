@@ -26,13 +26,20 @@ public class SelectItemIT extends BaseIT {
 	List<SelectItem> selectItems = null;
 	CIS552SO cis552SO = null;
 
-	public SelectItemIT(List<SelectItem> selectItems, BaseIT result, CIS552SO cis552SO) {
+	public SelectItemIT(List<SelectItem> selectItems, BaseIT result, CIS552SO cis552SO) throws SQLException {
 		if (selectItems.get(0) instanceof SelectExpressionItem) {
 			if (((SelectExpressionItem) selectItems.get(0)).getExpression() instanceof Function) {
 				Function funExp = (Function) ((SelectExpressionItem) selectItems.get(0)).getExpression();
+				switch (funExp.getName().toUpperCase()) {
+				case "COUNT":
+				case "SUM":
+				case "AVG":
+				case "MIN":
+				case "MAX":
+					result = new AggFunctionIT(result, cis552SO, selectItems);
+					break;
+				}
 
-				result = new AggFunctionIT(funExp, result, cis552SO,
-						((SelectExpressionItem) selectItems.get(0)).getAlias());
 			}
 		}
 
@@ -71,6 +78,9 @@ public class SelectItemIT extends BaseIT {
 
 	private TableResult solveSelectItemExpression(TableResult oldTableResult, TableResult newTableResult)
 			throws SQLException {
+		if (result instanceof AggFunctionIT) {
+			return oldTableResult;
+		}
 		if (selectItems.get(0) instanceof AllColumns) {
 			newTableResult.resultTuples = oldTableResult.resultTuples;
 		} else {
@@ -78,11 +88,8 @@ public class SelectItemIT extends BaseIT {
 			for (SelectItem selectItem : selectItems) {
 				if (selectItem instanceof SelectExpressionItem) {
 					Expression expr = ((SelectExpressionItem) selectItem).getExpression();
-					if (expr instanceof Function) {
-						return oldTableResult;
-					} else {
-						finalExpItemList.add(expr);
-					}
+
+					finalExpItemList.add(expr);
 				} else if (selectItem instanceof AllTableColumns) {
 					AllTableColumns allTableColumn = (AllTableColumns) selectItem;
 					TableColumnData tableSchema = cis552SO.tables

@@ -1,5 +1,5 @@
 CREATE TABLE R (A int, B int);
-CREATE TABLE S (A int, B int);
+CREATE TABLE S (A int, B int,C Date);
 CREATE TABLE PLAYERS(ID string, FIRSTNAME string, LASTNAME string, FIRSTSEASON int, LASTSEASON int, WEIGHT int, BIRTHDATE date);
 
-select R.A from R where NOT Exists (select * from S where R.A == S.A);
+SELECT NEWTABLE.A,NEWTABLE.B FROM (SELECT A, B FROM R) AS NEWTABLE WHERE NEWTABLE.B BETWEEN(1) AND (3);

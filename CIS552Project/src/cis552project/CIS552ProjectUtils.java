@@ -56,7 +56,7 @@ public class CIS552ProjectUtils {
 		try (FileReader file = new FileReader(filePath)) {
 			BufferedReader fileStream = new BufferedReader(file);
 			String temp = fileStream.readLine();
-			String previousString = temp;
+			String previousString = "";
 			while (temp != null) {
 				if (!temp.endsWith(";")) {
 					previousString += " " + temp;

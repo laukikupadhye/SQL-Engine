@@ -18,8 +18,5 @@ FROM supplier s,
 WHERE 
     s.suppkey = r1.supplier_no;
 
-SELECT l.shipmode
-FROM   orders o, lineitem l
-WHERE  o.orderkey = l.orderkey
-  AND  l.shipmode IN ('MAIL', 'SHIP');
+
 

@@ -24,18 +24,25 @@ public class GroupByIT extends BaseIT {
 	Iterator<Tuple> resIT = null;
 	List<Tuple> finalResultTuples = null;
 
+	TableResult initialTabRes = null;
+
 	Map<Tuple, List<Tuple>> groupByMap = new HashMap<>();
 
 	public GroupByIT(List<Column> groupByColumnList, List<SelectItem> selectItems, BaseIT result, CIS552SO cis552so)
 			throws SQLException {
-		copyAllResults(result);
+
+		finalResultTuples = new ArrayList<>();
+		while (result.hasNext()) {
+			initialTabRes = result.getNext();
+			finalResultTuples.addAll(initialTabRes.resultTuples);
+		}
 		List<Tuple> resultCombiningSelect = new ArrayList<>();
 		for (Tuple tuple : finalResultTuples) {
 			PrimitiveValue primValeArray[] = new PrimitiveValue[groupByColumnList.size()];
 			for (int i = 0; i < groupByColumnList.size(); i++) {
 				Column column = groupByColumnList.get(i);
 
-				Eval eval = new ExpressionEvaluator(Arrays.asList(tuple), finalTableResult, cis552so);
+				Eval eval = new ExpressionEvaluator(Arrays.asList(tuple), initialTabRes, cis552so);
 				primValeArray[i] = eval.eval(column);
 			}
 			Tuple groupedTuple = new Tuple(primValeArray);
@@ -73,27 +80,23 @@ public class GroupByIT extends BaseIT {
 
 	}
 
-	private void copyAllResults(BaseIT result) {
-		List<Tuple> resultTuples = new ArrayList<>();
-		while (result.hasNext()) {
-			TableResult initialTabRes = result.getNext();
-			if (finalTableResult == null) {
-				finalTableResult = new TableResult();
-				finalTableResult.aliasandTableName.putAll(initialTabRes.aliasandTableName);
-				finalTableResult.colPosWithTableAlias.putAll(initialTabRes.colPosWithTableAlias);
-				finalTableResult.fromItems.addAll(initialTabRes.fromItems);
-			}
-			resultTuples.addAll(initialTabRes.resultTuples);
-		}
-		finalResultTuples = resultTuples;
-	}
-
 	private PrimitiveValue[] evaluateFunction(PrimitiveValue[] groupByKey, List<Tuple> resultTuples,
 			List<SelectItem> selectItems, List<Column> groupByColumnList, CIS552SO cis552SO) throws SQLException {
 		PrimitiveValue[] valueAfterFuntion = new PrimitiveValue[selectItems.size()];
 		for (int i = 0; i < selectItems.size(); i++) {
-			Expression exp = ((SelectExpressionItem) selectItems.get(i)).getExpression();
-			Eval eval = new ExpressionEvaluator(resultTuples, finalTableResult, cis552SO);
+			SelectExpressionItem sei = (SelectExpressionItem) selectItems.get(i);
+			if (finalTableResult == null) {
+				finalTableResult = new TableResult();
+			}
+			String columnName = selectItems.get(i).toString();
+			if (selectItems.get(i) instanceof Column) {
+				Column column = (Column) selectItems.get(i);
+				columnName = column.getColumnName();
+			}
+			String columnAlias = sei.getAlias() != null ? sei.getAlias() : columnName;
+			finalTableResult.colPosWithTableAlias.put(new Column(null, columnAlias), i);
+			Expression exp = sei.getExpression();
+			Eval eval = new ExpressionEvaluator(resultTuples, initialTabRes, cis552SO);
 			valueAfterFuntion[i] = eval.eval(exp);
 		}
 		return valueAfterFuntion;

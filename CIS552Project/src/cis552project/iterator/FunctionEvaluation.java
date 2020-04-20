@@ -97,7 +97,7 @@ public class FunctionEvaluation {
 				funExp.getParameters().getExpressions().get(0), finalTableResult, cis552so);
 		Double sum = 0.0;
 		for (PrimitiveValue primitiveValue : pValueList) {
-			sum += ((LongValue) primitiveValue).getValue();
+			sum += primitiveValue.toDouble();
 		}
 		return new DoubleValue(sum);
 	}
@@ -109,7 +109,7 @@ public class FunctionEvaluation {
 		double sum = 0;
 		double avg = 0;
 		for (PrimitiveValue primitiveValue : pValueList) {
-			sum += ((LongValue) primitiveValue).getValue();
+			sum += primitiveValue.toDouble();
 		}
 		avg = sum / pValueList.size();
 		PrimitiveValue returnVal = new DoubleValue(avg);

@@ -5,10 +5,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import cis552project.CIS552ProjectUtils;
 import cis552project.CIS552SO;
 import cis552project.SQLDataType;
 import cis552project.TableColumnData;
@@ -29,10 +26,19 @@ public class TableIT extends BaseIT {
 	TableColumnData selectTableTemp = null;
 
 	public TableIT(Table table, CIS552SO cis552SO) {
+		tableRes = new TableResult();
 		try {
-			tableRes = new TableResult();
-			tableFile = new File(cis552SO.dataPath, table.getName() + ".dat");
+			tableFile = new File(cis552SO.dataPath, table.getName() + ".csv");
 			fileScanner = new Scanner(tableFile);
+
+		} catch (FileNotFoundException ex1) {
+			try {
+				tableFile = new File(cis552SO.dataPath, table.getName() + ".dat");
+				fileScanner = new Scanner(tableFile);
+			} catch (FileNotFoundException e) {
+				System.out.println("Exception : " + e.getLocalizedMessage());
+			}
+		} finally {
 			this.selectTableTemp = cis552SO.tables.get(table.getName());
 			this.colList = selectTableTemp.colList;
 			String aliasName = table.getAlias() != null ? table.getAlias() : table.getName();
@@ -44,8 +50,6 @@ public class TableIT extends BaseIT {
 //			tableRes.colDefMap = selectTableTemp.colDefMap;
 			tableRes.fromItems.add(table);
 			tableRes.aliasandTableName.put(aliasName, table.getName());
-		} catch (FileNotFoundException ex1) {
-			Logger.getLogger(CIS552ProjectUtils.class.getName()).log(Level.SEVERE, null, ex1);
 		}
 
 	}

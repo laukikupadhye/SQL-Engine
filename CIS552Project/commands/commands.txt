@@ -1,5 +1,21 @@
-CREATE TABLE R (A int, B int);
-CREATE TABLE S (A int, B int,C Date);
-CREATE TABLE PLAYERS(ID string, FIRSTNAME string, LASTNAME string, FIRSTSEASON int, LASTSEASON int, WEIGHT int, BIRTHDATE date);
+CREATE TABLE lineitem (orderkey INT,partkey INT,suppkey INT,linenumber INT,quantity DECIMAL,extendedprice  DECIMAL,discount DECIMAL,tax DECIMAL,returnflag CHAR(1),linestatus CHAR(1),shipdate DATE,commitdate DATE,receiptdate DATE,shipinstruct CHAR(25),shipmode CHAR(10),comment VARCHAR(44));
+CREATE TABLE orders (orderkey INT, custkey        INT,orderstatus    CHAR(1),totalprice     DECIMAL,orderdate      DATE,orderpriority  CHAR(15),clerk          CHAR(15),shippriority   INT,comment        VARCHAR(79));
+CREATE TABLE supplier (suppkey INT,name         CHAR(25),address      VARCHAR(40),nationkey    INT,phone        CHAR(15),acctbal      DECIMAL,comment      VARCHAR(101));
 
-SELECT NEWTABLE.A,NEWTABLE.B FROM (SELECT A, B FROM R) AS NEWTABLE WHERE NEWTABLE.B BETWEEN(1) AND (3);
+
+SELECT s.suppkey, s.name, s.address, s.phone, r1.total_revenue as total_revenue
+FROM supplier s, 
+     (SELECT l.suppkey AS supplier_no, 
+             SUM(l.extendedprice * (1 - l.discount)) AS total_revenue
+      FROM lineitem l
+      WHERE l.shipdate >= DATE('1996-01-01')
+        AND l.shipdate <  DATE('1996-04-01')
+      GROUP BY l.suppkey) AS r1
+WHERE 
+    s.suppkey = r1.supplier_no;
+
+SELECT l.shipmode
+FROM   orders o, lineitem l
+WHERE  o.orderkey = l.orderkey
+  AND  l.shipmode IN ('MAIL', 'SHIP');
+

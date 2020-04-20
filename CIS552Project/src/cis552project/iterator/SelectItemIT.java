@@ -2,7 +2,6 @@ package cis552project.iterator;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -36,7 +35,7 @@ public class SelectItemIT extends BaseIT {
 				case "AVG":
 				case "MIN":
 				case "MAX":
-					result = new AggFunctionIT(result, cis552SO, selectItems);
+					result = new AggFunctionIT(result);
 					break;
 				}
 
@@ -78,9 +77,6 @@ public class SelectItemIT extends BaseIT {
 
 	private TableResult solveSelectItemExpression(TableResult oldTableResult, TableResult newTableResult)
 			throws SQLException {
-		if (result instanceof AggFunctionIT) {
-			return oldTableResult;
-		}
 		if (selectItems.get(0) instanceof AllColumns) {
 			newTableResult.resultTuples = oldTableResult.resultTuples;
 		} else {
@@ -100,18 +96,15 @@ public class SelectItemIT extends BaseIT {
 							.collect(Collectors.toList()));
 				}
 			}
-			for (Tuple resultTuple : oldTableResult.resultTuples) {
-				PrimitiveValue[] primValToString = new PrimitiveValue[finalExpItemList.size()];
-				for (int i = 0; i < finalExpItemList.size(); i++) {
+			PrimitiveValue[] primValToString = new PrimitiveValue[finalExpItemList.size()];
+			for (int i = 0; i < finalExpItemList.size(); i++) {
+				Eval eval = new ExpressionEvaluator(oldTableResult.resultTuples, oldTableResult, cis552SO);
+				primValToString[i] = eval.eval(finalExpItemList.get(i));
 
-					Eval eval = new ExpressionEvaluator(Arrays.asList(resultTuple), oldTableResult, cis552SO);
-					primValToString[i] = eval.eval(finalExpItemList.get(i));
-
-				}
-
-				newTableResult.resultTuples = new ArrayList<>();
-				newTableResult.resultTuples.add(new Tuple(primValToString));
 			}
+
+			newTableResult.resultTuples = new ArrayList<>();
+			newTableResult.resultTuples.add(new Tuple(primValToString));
 		}
 
 		return newTableResult;
@@ -133,15 +126,13 @@ public class SelectItemIT extends BaseIT {
 				} else if (si instanceof SelectExpressionItem) {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression exp = sei.getExpression();
-					if (!(exp instanceof Function)) {
-						String columnName = exp.toString();
-						if (exp instanceof Column) {
-							Column column = (Column) exp;
-							columnName = column.getColumnName();
-						}
-						String columnAlias = sei.getAlias() != null ? sei.getAlias() : columnName;
-						newTableResult.colPosWithTableAlias.put(new Column(null, columnAlias), pos);
+					String columnName = exp.toString();
+					if (exp instanceof Column) {
+						Column column = (Column) exp;
+						columnName = column.getColumnName();
 					}
+					String columnAlias = sei.getAlias() != null ? sei.getAlias() : columnName;
+					newTableResult.colPosWithTableAlias.put(new Column(null, columnAlias), pos);
 
 				}
 				pos++;

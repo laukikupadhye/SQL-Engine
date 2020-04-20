@@ -25,15 +25,14 @@ public class PlainSelectIT extends BaseIT {
 			result = new WhereIT(plainSelect.getWhere(), result, cis552SO);
 		}
 		if (plainSelect.getGroupByColumnReferences() != null) {
-			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), plainSelect.getSelectItems(), result,
-					cis552SO);
-		} else {
-			result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
-
-			if (plainSelect.getDistinct() != null) {
-				result = new DistinctIT(result);
-			}
+			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), result, cis552SO);
 		}
+		result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
+
+		if (plainSelect.getDistinct() != null) {
+			result = new DistinctIT(result);
+		}
+
 		if (plainSelect.getOrderByElements() != null) {
 			result = new OrderByIT(plainSelect.getOrderByElements(), result, cis552SO);
 		}
@@ -55,8 +54,7 @@ public class PlainSelectIT extends BaseIT {
 			result = new WhereIT(plainSelect.getWhere(), result, cis552SO, outerQueryColResult);
 		}
 		if (plainSelect.getGroupByColumnReferences() != null) {
-			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), plainSelect.getSelectItems(), result,
-					cis552SO);
+			result = new GroupByIT(plainSelect.getGroupByColumnReferences(), result, cis552SO);
 		} else {
 			result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
 

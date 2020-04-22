@@ -7,42 +7,16 @@ CREATE TABLE nation (nationkey    INT,name CHAR(25), regionkey    INT, comment  
 CREATE TABLE partsupp (partkey      INT,suppkey      INT,availqty     INT,supplycost   DECIMAL,comment      VARCHAR(199));
 CREATE TABLE region (regionkey    INT, name         CHAR(25), comment      VARCHAR(152) );
 
-SELECT  c.custkey, c.name, 
-        SUM(l.extendedprice * (1 - l.discount)) AS revenue
-FROM    customer c, orders o, lineitem l, nation n
-WHERE   c.custkey = o.custkey
-  AND   l.orderkey = o.orderkey
-  AND   o.orderdate >= DATE('1993-10-01')
-  AND   o.orderdate < DATE('1994-01-01')
-  AND   l.returnflag = 'R'
-  AND   c.nationkey = n.nationkey
-GROUP BY c.custkey, c.name;
-
-SELECT l.shipmode 
-FROM   orders o, lineitem l
-WHERE  o.orderkey = l.orderkey
-  AND  (l.shipmode IN ('1-URGENT', '2-HIGH'))
-  AND  l.commitdate < l.receiptdate
-  AND  l.shipdate < l.commitdate
-  AND  l.receiptdate >= DATE('1994-01-01')
-  AND  l.receiptdate < DATE('1995-01-01')
-GROUP BY l.shipmode;
-
-SELECT n2.name,
-           DATE_PART('year', o.orderdate) AS o_year,
-           l.extendedprice * (1-l.discount) AS volume
-    FROM   part p, supplier s, lineitem l, orders o, customer c, nation n1,
-           nation n2, region r
-    WHERE  p.partkey = l.partkey
-      AND  s.suppkey = l.suppkey
-      AND  l.orderkey = o.orderkey
-      AND  o.custkey = c.custkey
-      AND  c.nationkey = n1.nationkey 
-      AND  n1.regionkey = r.regionkey 
-      AND  r.name = 'AMERICA'
-      AND  s.nationkey = n2.nationkey
-      AND  (o.orderdate BETWEEN DATE('1995-01-01') AND DATE('1996-12-31'))
-      AND  p.type = 'ECONOMY ANODIZED STEEL';
 
 
-
+SELECT s.suppkey, s.name, s.address, s.phone, r1.total_revenue as total_revenue
+FROM supplier s, 
+     (SELECT l.suppkey AS supplier_no, 
+             SUM(l.extendedprice * (1 - l.discount)) AS total_revenue
+      FROM lineitem l
+      WHERE l.shipdate >= DATE('1996-01-01')
+        AND l.shipdate <  DATE('1996-04-01')
+        
+      GROUP BY l.suppkey) AS r1
+WHERE 
+    s.suppkey = r1.supplier_no;

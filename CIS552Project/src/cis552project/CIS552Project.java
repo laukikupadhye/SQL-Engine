@@ -5,10 +5,14 @@
  */
 package cis552project;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import cis552project.iterator.BaseIT;
@@ -29,8 +33,11 @@ public class CIS552Project {
 		cis552SO.dataPath = args[1];
 
 		try {
+			FileWriter myWriter = new FileWriter(args[1] + "//" + "result.txt");
+			BufferedWriter out = new BufferedWriter(myWriter);
 			List<String> commands = CIS552ProjectUtils.readCommands(commandsLoc);
 			for (String command : commands) {
+				Instant start = Instant.now();
 				try (Reader reader = new StringReader(command)) {
 					CCJSqlParser parser = new CCJSqlParser(reader);
 					Statement statement = parser.Statement();
@@ -42,15 +49,20 @@ public class CIS552Project {
 						Select select = (Select) statement;
 						BaseIT result = new SelectBodyIT(select.getSelectBody(), cis552SO, null);
 						while (result.hasNext()) {
-							printResult(result.getNext().resultTuples);
+							printResult(result.getNext().resultTuples, out);
 						}
 					}
 				} catch (ParseException | SQLException e) {
 					System.out.println("Exception : " + e.getLocalizedMessage());
 				} finally {
-					System.out.println("=");
+					Instant finish = Instant.now();
+					System.out.println("= TIME ----- " + Duration.between(start, finish).toSeconds() + " sec");
+					out.write("= TIME ----- " + Duration.between(start, finish).toSeconds() + " sec");
+					out.newLine();
+
 				}
 			}
+			out.close();
 		} catch (IOException e) {
 
 			System.out.println("Commands location was not identified. Please see the below exception.");
@@ -66,9 +78,11 @@ public class CIS552Project {
 		cis552SO.tables.put(tableName, tableColData);
 	}
 
-	private static void printResult(List<Tuple> resultTuples) {
+	private static void printResult(List<Tuple> resultTuples, BufferedWriter out) throws IOException {
 		for (Tuple resultTuple : resultTuples) {
 			System.out.println(resultTuple.toString());
+			out.write(resultTuple.toString());
+			out.newLine();
 		}
 	}
 }

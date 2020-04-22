@@ -6,12 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import cis552project.CIS552SO;
 import cis552project.SQLDataType;
 import cis552project.TableColumnData;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
-import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -20,13 +21,12 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
 public class TableIT extends BaseIT {
-	File tableFile = null;
-	TableResult tableRes = null;
-	Scanner fileScanner = null;
-	List<Column> colList = null;
-	TableColumnData selectTableTemp = null;
-	Expression selectionPushedDownExp;
-	CIS552SO cis552SO;
+	private File tableFile = null;
+	private TableResult tableRes = null;
+	private Scanner fileScanner = null;
+	private List<Column> colList = null;
+	private TableColumnData selectTableTemp = null;
+	private CIS552SO cis552SO;
 
 	public TableIT(Table table, CIS552SO cis552SO) {
 
@@ -65,13 +65,14 @@ public class TableIT extends BaseIT {
 
 	@Override
 	public boolean hasNext() {
-		while (fileScanner.hasNext()) {
-			tableRes.resultTuples = new ArrayList<>();
+		tableRes.resultTuples = new ArrayList<>();
+		int n = cis552SO.tupleLimit;
+		while (fileScanner.hasNext() && n != 0) {
 			Tuple tuple = fetchConvertedTupleFromStringArray(fileScanner.nextLine().split("\\|"));
 			tableRes.resultTuples.add(tuple);
-			return true;
+			n--;
 		}
-		return false;
+		return CollectionUtils.isNotEmpty(tableRes.resultTuples);
 	}
 
 	@Override

@@ -1,7 +1,11 @@
 package cis552project.iterator;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 import cis552project.CIS552SO;
 import cis552project.ExpressionEvaluator;
@@ -46,12 +50,20 @@ public class WhereIT extends BaseIT {
 		while (result.hasNext()) {
 			tableResult = result.getNext();
 			try {
-				Eval eval = new ExpressionEvaluator(tableResult.resultTuples, tableResult, cis552SO,
-						outerQueryColResult);
-				PrimitiveValue primValue = eval.eval(where);
-				if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
+				List<Tuple> resultTuples = new ArrayList<>();
+				for (Tuple tuple : tableResult.resultTuples) {
+					Eval eval = new ExpressionEvaluator(tuple, tableResult, cis552SO, outerQueryColResult);
+					PrimitiveValue primValue = eval.eval(where);
+					// System.out.println(primValue);
+					if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
+						resultTuples.add(tuple);
+					}
+				}
+				if (CollectionUtils.isNotEmpty(resultTuples)) {
+					tableResult.resultTuples = resultTuples;
 					return true;
 				}
+
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

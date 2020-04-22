@@ -7,7 +7,6 @@ package cis552project.iterator;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -77,8 +76,8 @@ public class OrderByIT extends BaseIT {
 			int compare = 0;
 			for (OrderByElement orderByElement : orderByElements) {
 				try {
-					Eval eval1 = new ExpressionEvaluator(Arrays.asList(t1), finalTableResult, cis552SO);
-					Eval eval2 = new ExpressionEvaluator(Arrays.asList(t2), finalTableResult, cis552SO);
+					Eval eval1 = new ExpressionEvaluator(t1, finalTableResult, cis552SO, null);
+					Eval eval2 = new ExpressionEvaluator(t2, finalTableResult, cis552SO, null);
 					PrimitiveValue pval1 = eval1.eval(orderByElement.getExpression());
 					PrimitiveValue pval2 = eval2.eval(orderByElement.getExpression());
 					switch (pval1.getType()) {

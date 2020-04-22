@@ -27,23 +27,16 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 public class ExpressionEvaluator extends Eval {
-	private List<Tuple> resultTuples;
+	private Tuple resultTuple;
 	private TableResult tabResult;
 	private CIS552SO cis552SO;
 	private Map<Column, PrimitiveValue> outerQueryColResult;
 	List<PrimitiveValue> inExpressionResult;
 
-	public ExpressionEvaluator(List<Tuple> resultTuples, TableResult tabResult, CIS552SO cis552SO) throws SQLException {
-		this.resultTuples = resultTuples;
-		this.tabResult = tabResult;
-		this.cis552SO = cis552SO;
-		inExpressionResult = new ArrayList<>();
-	}
-
-	public ExpressionEvaluator(List<Tuple> resultTuples, TableResult tabResult, CIS552SO cis552SO,
+	public ExpressionEvaluator(Tuple resultTuples, TableResult tabResult, CIS552SO cis552SO,
 			Map<Column, PrimitiveValue> outerQueryColResult) {
 
-		this.resultTuples = resultTuples;
+		this.resultTuple = resultTuples;
 		this.tabResult = tabResult;
 		this.cis552SO = cis552SO;
 
@@ -62,17 +55,17 @@ public class ExpressionEvaluator extends Eval {
 		if (tabResult.colPosWithTableAlias.get(column) == null) {
 			return outerQueryColResult.get(column);
 		}
-		return resultTuples.get(0).resultRow[tabResult.colPosWithTableAlias.get(column)];
+		return resultTuple.resultRow[tabResult.colPosWithTableAlias.get(column)];
 	}
 
 	@Override
 	public PrimitiveValue eval(Function function) throws SQLException {
-		return FunctionEvaluation.applyFunction(resultTuples, function, tabResult, cis552SO);
+		return FunctionEvaluation.applyFunction(resultTuple, function, tabResult, cis552SO);
 	}
 
 	@Override
 	public PrimitiveValue eval(ExistsExpression existExp) throws SQLException {
-		Eval eval = new ExpressionEvaluator(resultTuples, tabResult, cis552SO);
+		Eval eval = new ExpressionEvaluator(resultTuple, tabResult, cis552SO, null);
 		PrimitiveValue existsValue = BooleanValue.FALSE;
 		if (existExp.getRightExpression() instanceof SubSelect) {
 			existsValue = evalSubSelect((SubSelect) existExp.getRightExpression());
@@ -95,11 +88,11 @@ public class ExpressionEvaluator extends Eval {
 			}
 		} else {
 			for (Expression expr : ((ExpressionList) inExp.getItemsList()).getExpressions()) {
-				Eval inEval = new ExpressionEvaluator(resultTuples, tabResult, cis552SO);
+				Eval inEval = new ExpressionEvaluator(resultTuple, tabResult, cis552SO, null);
 				inExpressionResult.add(inEval.eval(expr));
 			}
 		}
-		Eval evalLeftExp = new ExpressionEvaluator(resultTuples, tabResult, cis552SO);
+		Eval evalLeftExp = new ExpressionEvaluator(resultTuple, tabResult, cis552SO, null);
 		PrimitiveValue leftHSV = evalLeftExp.eval(inExp.getLeftExpression());
 		if (inExpressionResult.contains(leftHSV)) {
 			return BooleanValue.TRUE;
@@ -111,7 +104,7 @@ public class ExpressionEvaluator extends Eval {
 		Map<Column, PrimitiveValue> outerQueryColResult = new HashMap<>();
 
 		for (Entry<Column, Integer> entrySet : tabResult.colPosWithTableAlias.entrySet()) {
-			outerQueryColResult.put(entrySet.getKey(), resultTuples.get(0).resultRow[entrySet.getValue()]);
+			outerQueryColResult.put(entrySet.getKey(), resultTuple.resultRow[entrySet.getValue()]);
 		}
 		BaseIT result = new SubSelectIT(subSelect, cis552SO, outerQueryColResult);
 		if (result.hasNext()) {

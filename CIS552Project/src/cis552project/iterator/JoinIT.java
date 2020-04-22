@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import cis552project.CIS552SO;
 import cis552project.ExpressionEvaluator;
 import net.sf.jsqlparser.eval.Eval;
@@ -70,6 +72,7 @@ public class JoinIT extends BaseIT {
 				result2HasNext = result2.hasNext();
 			}
 			TableResult tableResult2 = result2.getNext();
+
 			if (newTableResult == null) {
 				newTableResult = new TableResult();
 				newTableResult.fromTables.addAll(tableResult1.fromTables);
@@ -116,13 +119,12 @@ public class JoinIT extends BaseIT {
 					Tuple tuple = new Tuple(result);
 					if (joiningTablesExpressions != null) {
 						try {
-							Eval eval = new ExpressionEvaluator(Arrays.asList(tuple), newTableResult, cis552SO, null);
+							Eval eval = new ExpressionEvaluator(tuple, newTableResult, cis552SO, null);
 							if (joiningTablesExpressions == null)
 								System.out.println(tuple);
 							PrimitiveValue primValue = eval.eval(joiningTablesExpressions);
 							if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
 								newTableResult.resultTuples.add(tuple);
-								return true;
 							}
 						} catch (SQLException e) {
 							e.printStackTrace();
@@ -130,9 +132,11 @@ public class JoinIT extends BaseIT {
 
 					} else {
 						newTableResult.resultTuples.add(tuple);
-						return true;
 					}
 				}
+			}
+			if (CollectionUtils.isNotEmpty(newTableResult.resultTuples)) {
+				return true;
 			}
 			result2HasNext = result2.hasNext();
 		}

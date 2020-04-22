@@ -89,9 +89,7 @@ public class PlainSelectIT extends BaseIT {
 			}
 		}
 
-		if (plainSelect.getDistinct() != null)
-
-		{
+		if (plainSelect.getDistinct() != null) {
 			result = new DistinctIT(result);
 		}
 		if (plainSelect.getOrderByElements() != null) {
@@ -167,7 +165,7 @@ public class PlainSelectIT extends BaseIT {
 								}
 							}
 							PrimitiveValue primValue = FunctionEvaluation.applyFunction(null, func, null, cis552SO);
-							extractedColumn(new EqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
+							extractedColumn(new GreaterThan(exp.getLeftExpression(), primValue), selectionPushedDown,
 									isAndExpression, leftExpTable);
 							return null;
 						}
@@ -203,8 +201,8 @@ public class PlainSelectIT extends BaseIT {
 								}
 							}
 							PrimitiveValue primValue = FunctionEvaluation.applyFunction(null, func, null, cis552SO);
-							extractedColumn(new EqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
-									isAndExpression, leftExpTable);
+							extractedColumn(new GreaterThanEquals(exp.getLeftExpression(), primValue),
+									selectionPushedDown, isAndExpression, leftExpTable);
 							return null;
 						}
 					}
@@ -239,7 +237,7 @@ public class PlainSelectIT extends BaseIT {
 								}
 							}
 							PrimitiveValue primValue = FunctionEvaluation.applyFunction(null, func, null, cis552SO);
-							extractedColumn(new EqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
+							extractedColumn(new MinorThan(exp.getLeftExpression(), primValue), selectionPushedDown,
 									isAndExpression, leftExpTable);
 							return null;
 						}
@@ -275,8 +273,8 @@ public class PlainSelectIT extends BaseIT {
 								}
 							}
 							PrimitiveValue primValue = FunctionEvaluation.applyFunction(null, func, null, cis552SO);
-							extractedColumn(new EqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
-									isAndExpression, leftExpTable);
+							extractedColumn(new MinorThanEquals(exp.getLeftExpression(), primValue),
+									selectionPushedDown, isAndExpression, leftExpTable);
 							return null;
 						}
 					}
@@ -347,7 +345,7 @@ public class PlainSelectIT extends BaseIT {
 								}
 							}
 							PrimitiveValue primValue = FunctionEvaluation.applyFunction(null, func, null, cis552SO);
-							extractedColumn(new EqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
+							extractedColumn(new NotEqualsTo(exp.getLeftExpression(), primValue), selectionPushedDown,
 									isAndExpression, leftExpTable);
 							return null;
 						}

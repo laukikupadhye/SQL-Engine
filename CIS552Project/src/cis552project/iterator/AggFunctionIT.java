@@ -27,24 +27,42 @@ public class AggFunctionIT extends BaseIT {
 		List<Tuple> resultTuples = new ArrayList<>();
 
 		TableResult initialTabRes = null;
-		DoubleValue[] primValToString = new DoubleValue[selectItems.size()];
-
+		PrimitiveValue[] resultRow = new PrimitiveValue[selectItems.size()];
+		long tupleCount = 0;
 		while (result.hasNext()) {
 			initialTabRes = result.getNext();
-			for (int i = 0; i < selectItems.size(); i++) {
-
-				Eval eval = new ExpressionEvaluator(initialTabRes.resultTuples, initialTabRes, cis552SO);
-				PrimitiveValue primitivevalue = eval.eval(((SelectExpressionItem) selectItems.get(i)).getExpression());
-				if (primValToString[i] == null) {
-					primValToString[i] = new DoubleValue(0);
+			for (Tuple tuple : initialTabRes.resultTuples) {
+				tupleCount++;
+				for (int i = 0; i < selectItems.size(); i++) {
+					Expression exp = ((SelectExpressionItem) selectItems.get(i)).getExpression();
+					Eval eval = new ExpressionEvaluator(tuple, initialTabRes, cis552SO, null);
+					PrimitiveValue primValue = eval.eval(exp);
+					if (primValue instanceof DoubleValue && resultRow[i] != null) {
+						if (exp.toString().toUpperCase().contains("COUNT")) {
+							primValue = new DoubleValue(tupleCount);
+						} else if (exp.toString().toUpperCase().contains("SUM")) {
+							primValue = new DoubleValue(resultRow[i].toDouble() + primValue.toDouble());
+						} else if (exp.toString().toUpperCase().contains("MIN")) {
+							double min = primValue.toDouble();
+							if (min > resultRow[i].toDouble())
+								primValue = resultRow[i];
+						} else if (exp.toString().toUpperCase().contains("MAX")) {
+							double max = primValue.toDouble();
+							if (max < resultRow[i].toDouble())
+								primValue = resultRow[i];
+						} else if (exp.toString().toUpperCase().contains("AVG")) {
+							double previous = resultRow[i].toDouble() * (tupleCount - 1);
+							primValue = new DoubleValue((primValue.toDouble() + previous) / tupleCount);
+						}
+					}
+					resultRow[i] = primValue;
 				}
-				primValToString[i] = new DoubleValue(primValToString[i].toDouble() + primitivevalue.toDouble());
 			}
 			resultTuples.addAll(initialTabRes.resultTuples);
 		}
 
 		finalResultTuples = new ArrayList<>();
-		finalResultTuples.add(new Tuple(primValToString));
+		finalResultTuples.add(new Tuple(resultRow));
 
 		resIT = finalResultTuples.iterator();
 		finalTableResult = new TableResult();

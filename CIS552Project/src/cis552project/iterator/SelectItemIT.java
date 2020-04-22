@@ -82,15 +82,16 @@ public class SelectItemIT extends BaseIT {
 							.collect(Collectors.toList()));
 				}
 			}
-			PrimitiveValue[] primValToString = new PrimitiveValue[finalExpItemList.size()];
-			for (int i = 0; i < finalExpItemList.size(); i++) {
-				Eval eval = new ExpressionEvaluator(oldTableResult.resultTuples, oldTableResult, cis552SO);
-				primValToString[i] = eval.eval(finalExpItemList.get(i));
-
+			newTableResult.resultTuples = new ArrayList<>();
+			for (Tuple tuple : oldTableResult.resultTuples) {
+				PrimitiveValue[] primValue = new PrimitiveValue[finalExpItemList.size()];
+				for (int i = 0; i < finalExpItemList.size(); i++) {
+					Eval eval = new ExpressionEvaluator(tuple, oldTableResult, cis552SO, null);
+					primValue[i] = eval.eval(finalExpItemList.get(i));
+				}
+				newTableResult.resultTuples.add(new Tuple(primValue));
 			}
 
-			newTableResult.resultTuples = new ArrayList<>();
-			newTableResult.resultTuples.add(new Tuple(primValToString));
 		}
 
 		return newTableResult;

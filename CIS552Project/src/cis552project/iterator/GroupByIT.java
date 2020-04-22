@@ -25,8 +25,6 @@ public class GroupByIT extends BaseIT {
 	Iterator<Tuple> resIT = null;
 	Collection<Tuple> finalResultTuples = null;
 
-	TableResult initialTabRes = null;
-
 	public GroupByIT(List<Column> groupByColumnList, List<SelectItem> selectItems, BaseIT result, CIS552SO cis552SO)
 			throws SQLException {
 
@@ -79,42 +77,62 @@ public class GroupByIT extends BaseIT {
 			List<SelectItem> selectItems, BaseIT result, CIS552SO cis552SO) throws SQLException, InvalidPrimitive {
 
 		Map<Tuple, Tuple> groupByMap = new HashMap<>();
+		Map<Tuple, Long> tupleCount = new HashMap<>();
 		while (result.hasNext()) {
-			initialTabRes = result.getNext();
+			TableResult initialTabRes = result.getNext();
 
-			PrimitiveValue primValeArray[] = new PrimitiveValue[groupByColumnList.size()];
-			for (int i = 0; i < groupByColumnList.size(); i++) {
-				Column column = groupByColumnList.get(i);
-
-				Eval eval = new ExpressionEvaluator(initialTabRes.resultTuples, initialTabRes, cis552SO);
-				primValeArray[i] = eval.eval(column);
-			}
-			Tuple groupedTuple = new Tuple(primValeArray);
-			if (!groupByMap.containsKey(groupedTuple)) {
-				PrimitiveValue[] resultprimitive = new PrimitiveValue[selectItems.size()];
-				groupByMap.put(groupedTuple, new Tuple(resultprimitive));
-			}
-			for (int i = 0; i < selectItems.size(); i++) {
-				SelectExpressionItem sei = (SelectExpressionItem) selectItems.get(i);
-				Expression exp = sei.getExpression();
-				if (exp instanceof Column) {
-					int index = groupByColumnList.indexOf(exp);
-					groupByMap.get(groupedTuple).resultRow[i] = groupedTuple.resultRow[index];
-				} else {
-					Eval eval = new ExpressionEvaluator(initialTabRes.resultTuples, initialTabRes, cis552SO);
-					PrimitiveValue primValue = eval.eval(exp);
-					if (primValue instanceof DoubleValue) {
-						if (groupByMap.get(groupedTuple).resultRow[i] == null) {
-							groupByMap.get(groupedTuple).resultRow[i] = new DoubleValue(0);
-						}
-						groupByMap.get(groupedTuple).resultRow[i] = new DoubleValue(
-								groupByMap.get(groupedTuple).resultRow[i].toDouble() + primValue.toDouble());
-					} else {
-						groupByMap.get(groupedTuple).resultRow[i] = primValue;
-					}
+			for (Tuple tuple : initialTabRes.resultTuples) {
+				PrimitiveValue primValeArray[] = new PrimitiveValue[groupByColumnList.size()];
+				for (int i = 0; i < groupByColumnList.size(); i++) {
+					Column column = groupByColumnList.get(i);
+					Eval eval = new ExpressionEvaluator(tuple, initialTabRes, cis552SO, null);
+					primValeArray[i] = eval.eval(column);
+				}
+				Tuple groupedTuple = new Tuple(primValeArray);
+				if (!groupByMap.containsKey(groupedTuple)) {
+					PrimitiveValue[] resultprimitive = new PrimitiveValue[selectItems.size()];
+					groupByMap.put(groupedTuple, new Tuple(resultprimitive));
+					tupleCount.put(groupedTuple, (long) 0);
 				}
 
+				tupleCount.put(groupedTuple, tupleCount.get(groupedTuple) + 1);
+				for (int i = 0; i < selectItems.size(); i++) {
+					SelectExpressionItem sei = (SelectExpressionItem) selectItems.get(i);
+					Expression exp = sei.getExpression();
+					if (exp instanceof Column) {
+						int index = groupByColumnList.indexOf(exp);
+						groupByMap.get(groupedTuple).resultRow[i] = groupedTuple.resultRow[index];
+					} else {
+						Eval eval = new ExpressionEvaluator(tuple, initialTabRes, cis552SO, null);
+						PrimitiveValue primValue = eval.eval(exp);
+
+						if (primValue instanceof DoubleValue && groupByMap.get(groupedTuple).resultRow[i] != null) {
+							if (exp.toString().toUpperCase().contains("COUNT")) {
+								primValue = new DoubleValue(tupleCount.get(groupedTuple));
+							} else if (exp.toString().toUpperCase().contains("SUM")) {
+								primValue = new DoubleValue(
+										groupByMap.get(groupedTuple).resultRow[i].toDouble() + primValue.toDouble());
+							} else if (exp.toString().toUpperCase().contains("MIN")) {
+								double min = primValue.toDouble();
+								if (min > groupByMap.get(groupedTuple).resultRow[i].toDouble())
+									primValue = groupByMap.get(groupedTuple).resultRow[i];
+							} else if (exp.toString().toUpperCase().contains("MAX")) {
+								double max = primValue.toDouble();
+								if (max < groupByMap.get(groupedTuple).resultRow[i].toDouble())
+									primValue = groupByMap.get(groupedTuple).resultRow[i];
+							} else if (exp.toString().toUpperCase().contains("AVG")) {
+								double previous = groupByMap.get(groupedTuple).resultRow[i].toDouble()
+										* (tupleCount.get(groupedTuple) - 1);
+								primValue = new DoubleValue(
+										(primValue.toDouble() + previous) / tupleCount.get(groupedTuple));
+							}
+						}
+						groupByMap.get(groupedTuple).resultRow[i] = primValue;
+					}
+
+				}
 			}
+
 		}
 		return groupByMap;
 	}

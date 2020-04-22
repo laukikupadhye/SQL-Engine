@@ -6,6 +6,7 @@
 package cis552project.iterator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import net.sf.jsqlparser.statement.select.Limit;
@@ -19,6 +20,8 @@ public class LimitIT extends BaseIT {
 	long current_position = 0;
 	List<Tuple> resultTuples = new ArrayList<>();
 	BaseIT result = null;
+	Iterator<Tuple> resIT;
+	TableResult tableResult;
 
 	LimitIT(Limit limit, BaseIT result) {
 		this.limit = limit;
@@ -27,16 +30,30 @@ public class LimitIT extends BaseIT {
 
 	@Override
 	public TableResult getNext() {
-		current_position++;
-		return result.getNext();
+		return tableResult;
 	}
 
 	@Override
 	public boolean hasNext() {
-		if (current_position == limit.getRowCount() || result == null || !result.hasNext()) {
+		if (result == null) {
 			return false;
 		}
-		return true;
+
+		long rowsRequired = limit.getRowCount() - current_position;
+		while (rowsRequired > 0 && result.hasNext()) {
+			tableResult = result.getNext();
+			if (rowsRequired > tableResult.resultTuples.size()) {
+				current_position += tableResult.resultTuples.size();
+				return true;
+			} else {
+				List<Tuple> tupleList = new ArrayList<>();
+				for (long i = rowsRequired; i > 0; i = limit.getRowCount() - current_position) {
+					current_position++;
+					tupleList.add(tableResult.resultTuples.get((int) i));
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override

@@ -7,9 +7,7 @@ CREATE TABLE nation (nationkey    INT,name CHAR(25), regionkey    INT, comment  
 CREATE TABLE partsupp (partkey      INT,suppkey      INT,availqty     INT,supplycost   DECIMAL,comment      VARCHAR(199));
 CREATE TABLE region (regionkey    INT, name         CHAR(25), comment      VARCHAR(152) );
 
-
-
-SELECT *
+SELECT s.suppkey, s.name, s.address, s.phone, r1.total_revenue as total_revenue
 FROM supplier s, 
      (SELECT l.suppkey AS supplier_no, 
              SUM(l.extendedprice * (1 - l.discount)) AS total_revenue

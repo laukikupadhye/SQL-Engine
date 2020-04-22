@@ -1,7 +1,11 @@
 package cis552project.iterator;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 import cis552project.CIS552SO;
 import cis552project.ExpressionEvaluator;
@@ -48,7 +52,8 @@ public class FromItemIT extends BaseIT {
 			tableResult = result.getNext();
 			Expression exp = null;
 			for (Table table : tableResult.fromTables) {
-				Expression nextExp = selectionPushedDown.get(table.getName());
+				String aliasName = table.getAlias() != null ? table.getAlias() : table.getName();
+				Expression nextExp = selectionPushedDown.get(aliasName);
 				if (nextExp != null) {
 					if (exp != null) {
 						exp = new AndExpression(exp, nextExp);
@@ -59,18 +64,25 @@ public class FromItemIT extends BaseIT {
 			}
 			if (exp != null) {
 				try {
-
-					Eval eval = new ExpressionEvaluator(tableResult.resultTuples, tableResult, cis552SO, null);
-					PrimitiveValue primValue = eval.eval(exp);
-					if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
+					List<Tuple> resulTuples = new ArrayList<>();
+					for (Tuple tuple : tableResult.resultTuples) {
+						Eval eval = new ExpressionEvaluator(tuple, tableResult, cis552SO, null);
+						PrimitiveValue primValue = eval.eval(exp);
+						if (primValue.getType().equals(PrimitiveType.BOOL) && primValue.toBool()) {
+							resulTuples.add(tuple);
+						}
+					}
+					if (CollectionUtils.isNotEmpty(resulTuples)) {
+						tableResult.resultTuples = resulTuples;
 						return true;
 					}
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
 
+			} else {
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}

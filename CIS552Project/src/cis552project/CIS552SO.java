@@ -8,6 +8,6 @@ public class CIS552SO {
 
 	public Map<String, TableColumnData> tables = new HashMap<>();
 
-	public final int tupleLimit = 1000;
+	public final int tupleLimit = 1;
 
 }

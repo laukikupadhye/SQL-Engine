@@ -1,5 +1,6 @@
 package cis552project.iterator;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import cis552project.CIS552SO;
@@ -30,6 +32,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -47,14 +50,31 @@ public class PlainSelectIT extends BaseIT {
 		Map<String, Expression> selectionPushedDown = new HashMap<>();
 		Expression where = null;
 		Map<Tuple, Expression> joinsExpPushedDown = new HashMap<>();
+		Map<String, BaseIT> inMemoryTableResult = new HashMap<>();
 		if (plainSelect.getWhere() != null) {
 			where = extractExpressions(plainSelect.getWhere(), selectionPushedDown, joinsExpPushedDown, false);
 		}
-		result = new FromItemIT(plainSelect.getFromItem(), selectionPushedDown, cis552SO);
+		evaluateInMemoryTable(inMemoryTableResult, plainSelect.getFromItem(), plainSelect.getJoins(),
+				selectionPushedDown);
+		FromItem fromItem = plainSelect.getFromItem();
+		if (fromItem instanceof Table && inMemoryTableResult.containsKey(((Table) fromItem).getName())) {
+			result = inMemoryTableResult.get(((Table) fromItem).getName());
+		} else {
+			result = new FromItemIT(plainSelect.getFromItem(), selectionPushedDown, cis552SO);
+		}
 		if (plainSelect.getJoins() != null) {
 			for (Join join : plainSelect.getJoins()) {
-				BaseIT result2 = new FromItemIT(join.getRightItem(), selectionPushedDown, cis552SO);
-				result = new JoinIT(result, result2, joinsExpPushedDown, cis552SO);
+				FromItem joinFromItem = join.getRightItem();
+				if (joinFromItem instanceof Table
+						&& inMemoryTableResult.containsKey(((Table) joinFromItem).getName())) {
+
+					BaseIT result2 = inMemoryTableResult.get(((Table) joinFromItem).getName());
+					result = new JoinIT(result, result2, joinsExpPushedDown, cis552SO);
+
+				} else {
+					BaseIT result2 = new FromItemIT(join.getRightItem(), selectionPushedDown, cis552SO);
+					result = new JoinIT(result2, result, joinsExpPushedDown, cis552SO);
+				}
 			}
 		}
 		if (where != null) {
@@ -98,6 +118,32 @@ public class PlainSelectIT extends BaseIT {
 		if (plainSelect.getLimit() != null) {
 			result = new LimitIT(plainSelect.getLimit(), result);
 		}
+	}
+
+	private void evaluateInMemoryTable(Map<String, BaseIT> inMemoryTableResult, FromItem fromItem, List<Join> joins,
+			Map<String, Expression> selectionPushedDown) throws SQLException {
+		Table largestTable = null;
+		long filesize = 0;
+		if (fromItem instanceof Table) {
+			File tableFile = new File(cis552SO.dataPath, ((Table) fromItem).getName() + ".csv");
+			largestTable = (Table) fromItem;
+			filesize = tableFile.length();
+		}
+		if (CollectionUtils.isNotEmpty(joins)) {
+			for (Join join : joins) {
+
+				if (join.getRightItem() instanceof Table) {
+					File tableFile = new File(cis552SO.dataPath, ((Table) join.getRightItem()).getName() + ".csv");
+					if (tableFile.length() > filesize) {
+						largestTable = (Table) join.getRightItem();
+						filesize = tableFile.length();
+					}
+				}
+			}
+		}
+		inMemoryTableResult.put(largestTable.getName(),
+				new InMemoryTableIT(new FromItemIT(largestTable, selectionPushedDown, cis552SO), cis552SO));
+
 	}
 
 	@Override

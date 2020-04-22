@@ -50,20 +50,12 @@ public class JoinIT extends BaseIT {
 			return false;
 		}
 
-//		if (tableResult1 == null && result1.hasNext()) {
-//			tableResult1 = result1.getNext();
-//		}
-
-//		if (!result2.hasNext()) {
-//			result2.reset();
-//			if (!result1.hasNext()) {
-//				return false;
-//			}
-//			tableResult1 = result1.getNext();
-//		}
 		boolean result2HasNext = result2.hasNext();
 		while (result2HasNext || result1.hasNext()) {
-			if (tableResult1 == null && result1.hasNext()) {
+			if (tableResult1 == null) {
+				if (!result1.hasNext()) {
+					return false;
+				}
 				tableResult1 = result1.getNext();
 			}
 			if (!result2HasNext) {

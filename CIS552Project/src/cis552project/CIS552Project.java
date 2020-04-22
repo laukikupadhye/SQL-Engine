@@ -40,7 +40,7 @@ public class CIS552Project {
 						System.out.println("Table Create Successfully");
 					} else if (statement instanceof Select) {
 						Select select = (Select) statement;
-						BaseIT result = new SelectBodyIT(select.getSelectBody(), cis552SO);
+						BaseIT result = new SelectBodyIT(select.getSelectBody(), cis552SO, null);
 						while (result.hasNext()) {
 							printResult(result.getNext().resultTuples);
 						}

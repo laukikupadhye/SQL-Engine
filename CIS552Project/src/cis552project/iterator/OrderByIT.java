@@ -42,7 +42,7 @@ public class OrderByIT extends BaseIT {
 				finalTableResult = new TableResult();
 				finalTableResult.aliasandTableName.putAll(initialTabRes.aliasandTableName);
 				finalTableResult.colPosWithTableAlias.putAll(initialTabRes.colPosWithTableAlias);
-				finalTableResult.fromItems.addAll(initialTabRes.fromItems);
+				finalTableResult.fromTables.addAll(initialTabRes.fromTables);
 
 			}
 			finalResultTuples.addAll(initialTabRes.resultTuples);

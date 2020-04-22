@@ -14,7 +14,6 @@ import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
-import net.sf.jsqlparser.statement.select.FromItem;
 
 public class ExpressionEvaluatorBackUp {
 
@@ -48,7 +47,7 @@ public class ExpressionEvaluatorBackUp {
 				Table table = column.getTable();
 				ColumnDefinition colDef = null;
 				if (table == null || table.getName() == null) {
-					table = getTableSchemaForColumnFromFromItems(column, tabResult.fromItems, cis552SO).table;
+					table = getTableSchemaForColumnFromFromItems(column, tabResult.fromTables, cis552SO).table;
 				}
 				String tableName = tabResult.aliasandTableName.get(table.getName());
 				colDef = cis552SO.tables.get(tableName).colDefMap.get(column.getColumnName());
@@ -64,15 +63,13 @@ public class ExpressionEvaluatorBackUp {
 		return exp;
 	}
 
-	protected static TableColumnData getTableSchemaForColumnFromFromItems(Column column, List<FromItem> fromItems,
+	protected static TableColumnData getTableSchemaForColumnFromFromItems(Column column, List<Table> fromTables,
 			CIS552SO cis552SO) {
-		for (FromItem fromItem : fromItems) {
-			if (fromItem instanceof Table) {
-				Table table = (Table) fromItem;
-				TableColumnData tableSchema = cis552SO.tables.get(table.getName());
-				if (tableSchema.containsColumn(column.getColumnName())) {
-					return tableSchema;
-				}
+		for (Table fromTable : fromTables) {
+			Table table = fromTable;
+			TableColumnData tableSchema = cis552SO.tables.get(table.getName());
+			if (tableSchema.containsColumn(column.getColumnName())) {
+				return tableSchema;
 			}
 		}
 		return null;

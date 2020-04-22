@@ -13,11 +13,11 @@ public class SelectBodyIT extends BaseIT {
 
 	BaseIT result = null;
 
-	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) throws SQLException {
-		if (selectBody instanceof PlainSelect) {
-			result = new PlainSelectIT((PlainSelect) selectBody, cis552SO);
-		}
-	}
+//	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552SO) throws SQLException {
+//		if (selectBody instanceof PlainSelect) {
+//			result = new PlainSelectIT((PlainSelect) selectBody, cis552SO, null);
+//		}
+//	}
 
 	public SelectBodyIT(SelectBody selectBody, CIS552SO cis552so, Map<Column, PrimitiveValue> outerQueryColResult)
 			throws SQLException {

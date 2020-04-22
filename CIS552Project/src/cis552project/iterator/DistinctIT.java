@@ -19,7 +19,7 @@ public class DistinctIT extends BaseIT {
 				finalTableResult.aliasandTableName.putAll(initialTabRes.aliasandTableName);
 //				finalTableResult.colDefMap.putAll(initialTabRes.colDefMap);
 				finalTableResult.colPosWithTableAlias.putAll(initialTabRes.colPosWithTableAlias);
-				finalTableResult.fromItems.addAll(initialTabRes.fromItems);
+				finalTableResult.fromTables.addAll(initialTabRes.fromTables);
 			}
 			resultTuples.addAll(initialTabRes.resultTuples);
 		}

@@ -11,6 +11,7 @@ import cis552project.SQLDataType;
 import cis552project.TableColumnData;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -24,8 +25,13 @@ public class TableIT extends BaseIT {
 	Scanner fileScanner = null;
 	List<Column> colList = null;
 	TableColumnData selectTableTemp = null;
+	Expression selectionPushedDownExp;
+	CIS552SO cis552SO;
 
 	public TableIT(Table table, CIS552SO cis552SO) {
+
+		String aliasName = table.getAlias() != null ? table.getAlias() : table.getName();
+		this.cis552SO = cis552SO;
 		tableRes = new TableResult();
 		try {
 			tableFile = new File(cis552SO.dataPath, table.getName() + ".csv");
@@ -41,14 +47,12 @@ public class TableIT extends BaseIT {
 		} finally {
 			this.selectTableTemp = cis552SO.tables.get(table.getName());
 			this.colList = selectTableTemp.colList;
-			String aliasName = table.getAlias() != null ? table.getAlias() : table.getName();
 			int colPos = 0;
 			for (Column col : selectTableTemp.colList) {
 				tableRes.colPosWithTableAlias.put(new Column(new Table(aliasName), col.getColumnName()), colPos);
 				colPos++;
 			}
-//			tableRes.colDefMap = selectTableTemp.colDefMap;
-			tableRes.fromItems.add(table);
+			tableRes.fromTables.add(table);
 			tableRes.aliasandTableName.put(aliasName, table.getName());
 		}
 
@@ -56,15 +60,18 @@ public class TableIT extends BaseIT {
 
 	@Override
 	public TableResult getNext() {
-		List<Tuple> resultRows = new ArrayList<>();
-		resultRows.add(fetchConvertedTupleFromStringArray(fileScanner.nextLine().split("\\|")));
-		tableRes.resultTuples = resultRows;
 		return tableRes;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return fileScanner.hasNext();
+		while (fileScanner.hasNext()) {
+			tableRes.resultTuples = new ArrayList<>();
+			Tuple tuple = fetchConvertedTupleFromStringArray(fileScanner.nextLine().split("\\|"));
+			tableRes.resultTuples.add(tuple);
+			return true;
+		}
+		return false;
 	}
 
 	@Override

@@ -18,13 +18,13 @@ public class SubSelectIT extends BaseIT {
 	CIS552SO cis552SO = null;
 	TableResult newTableResult = null;
 
-	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO) throws SQLException {
-		this.subSelect = subSelect;
-		this.cis552SO = cis552SO;
-		SelectBody subSelectBody = subSelect.getSelectBody();
-		result = new SelectBodyIT(subSelectBody, cis552SO);
-
-	}
+//	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO) throws SQLException {
+//		this.subSelect = subSelect;
+//		this.cis552SO = cis552SO;
+//		SelectBody subSelectBody = subSelect.getSelectBody();
+//		result = new SelectBodyIT(subSelectBody, cis552SO);
+//
+//	}
 
 	public SubSelectIT(SubSelect subSelect, CIS552SO cis552SO, Map<Column, PrimitiveValue> outerQueryColResult)
 			throws SQLException {
@@ -61,7 +61,7 @@ public class SubSelectIT extends BaseIT {
 
 	private void copyTableInfoForSubSelect(TableResult oldTableResult, TableResult newTableResult) {
 		String tableName = subSelect.getAlias();
-		newTableResult.fromItems.add(new Table(tableName));
+		newTableResult.fromTables.add(new Table(tableName));
 		newTableResult.aliasandTableName.put(tableName, tableName);
 //		newTableResult.colDefMap.putAll(oldTableResult.colDefMap);
 //		TableColumnData tableSchema = new TableColumnData(new Table(tableName), oldTableResult.colDefMap.values());

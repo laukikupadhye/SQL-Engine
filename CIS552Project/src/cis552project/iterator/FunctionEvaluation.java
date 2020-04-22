@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import cis552project.CIS552SO;
 import cis552project.ExpressionEvaluator;
 import net.sf.jsqlparser.eval.Eval;
@@ -31,6 +33,7 @@ public class FunctionEvaluation {
 			return evaluateMin(initialResult, funExp, finalTableResult, cis552so);
 		case "MAX":
 			return evaluateMax(initialResult, funExp, finalTableResult, cis552so);
+		case "DATE_PART":
 		case "DATEPART":
 			return evaluateDatePart(initialResult, funExp, finalTableResult, cis552so);
 		case "DATE":
@@ -86,7 +89,7 @@ public class FunctionEvaluation {
 			List<PrimitiveValue> pValueList = fetchEvaluatedExpressions(initialResult,
 					funExp.getParameters().getExpressions().get(0), finalTableResult, cis552so);
 
-			return new LongValue(pValueList.size());
+			return new DoubleValue(pValueList.size());
 
 		}
 	}
@@ -112,8 +115,7 @@ public class FunctionEvaluation {
 			sum += primitiveValue.toDouble();
 		}
 		avg = sum / pValueList.size();
-		PrimitiveValue returnVal = new DoubleValue(avg);
-		return returnVal;
+		return new DoubleValue(avg);
 	}
 
 	private static PrimitiveValue evaluateMin(List<Tuple> initialResult, Function funExp, TableResult finalTableResult,
@@ -145,8 +147,14 @@ public class FunctionEvaluation {
 	private static List<PrimitiveValue> fetchEvaluatedExpressions(List<Tuple> initialResult, Expression expression,
 			TableResult finalTableResult, CIS552SO cis552so) throws SQLException {
 		List<PrimitiveValue> pValueList = new ArrayList<>();
-		for (Tuple tuple : initialResult) {
-			Eval eval = new ExpressionEvaluator(Arrays.asList(tuple), finalTableResult, cis552so);
+		if (CollectionUtils.isNotEmpty(initialResult)) {
+			for (Tuple tuple : initialResult) {
+				Eval eval = new ExpressionEvaluator(Arrays.asList(tuple), finalTableResult, cis552so);
+				PrimitiveValue value = eval.eval(expression);
+				pValueList.add(value);
+			}
+		} else {
+			Eval eval = new ExpressionEvaluator(null, finalTableResult, cis552so);
 			PrimitiveValue value = eval.eval(expression);
 			pValueList.add(value);
 		}

@@ -7,16 +7,49 @@ CREATE TABLE nation (nationkey    INT,name CHAR(25), regionkey    INT, comment  
 CREATE TABLE partsupp (partkey      INT,suppkey      INT,availqty     INT,supplycost   DECIMAL,comment      VARCHAR(199));
 CREATE TABLE region (regionkey    INT, name         CHAR(25), comment      VARCHAR(152) );
 
+SELECT count(*)
+    FROM   region r;
+    
+    SELECT count(*)
+    FROM   
+           nation n2;
 
 
-SELECT s.suppkey, s.name, s.address, s.phone, r1.total_revenue as total_revenue
-FROM supplier s, 
-     (SELECT l.suppkey AS supplier_no, 
-             SUM(l.extendedprice * (1 - l.discount)) AS total_revenue
-      FROM lineitem l
-      WHERE l.shipdate >= DATE('1996-01-01')
-        AND l.shipdate <  DATE('1996-04-01')
-        
-      GROUP BY l.suppkey) AS r1
-WHERE 
-    s.suppkey = r1.supplier_no;
+   SELECT count(*)
+    FROM   nation n1;
+    
+    
+   SELECT count(*)
+    FROM  customer c;
+
+   SELECT count(*)
+    FROM   orders o;
+
+   SELECT count(*)
+    FROM   lineitem l;
+
+
+   SELECT count(*)
+    FROM   supplier s;
+   SELECT count(*)
+    FROM   part p;
+    
+    
+    SELECT count(*)
+    FROM   part p, supplier s, lineitem l, orders o, customer c, nation n1,
+           nation n2, region r
+    WHERE  p.partkey = l.partkey
+      AND  s.suppkey = l.suppkey
+      AND  l.orderkey = o.orderkey
+      AND  o.custkey = c.custkey
+      AND  c.nationkey = n1.nationkey 
+      AND  n1.regionkey = r.regionkey 
+      AND  r.name = 'AMERICA'
+      AND  s.nationkey = n2.nationkey
+      AND  (o.orderdate BETWEEN DATE('1995-01-01') AND DATE('1996-12-31'))
+      AND  p.type = 'ECONOMY ANODIZED STEEL';
+
+
+    
+
+

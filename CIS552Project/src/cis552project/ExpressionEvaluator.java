@@ -86,7 +86,7 @@ public class ExpressionEvaluator extends Eval {
 	public PrimitiveValue eval(InExpression inExp) throws SQLException {
 		if (inExp.getItemsList() instanceof SubSelect) {
 			if (CollectionUtils.isEmpty(inExpressionResult)) {
-				BaseIT result = new SubSelectIT((SubSelect) inExp.getItemsList(), cis552SO);
+				BaseIT result = new SubSelectIT((SubSelect) inExp.getItemsList(), cis552SO, null);
 				while (result.hasNext()) {
 					for (Tuple tuple : result.getNext().resultTuples) {
 						inExpressionResult.add(tuple.resultRow[0]);

@@ -11,7 +11,6 @@ import cis552project.ExpressionEvaluator;
 import cis552project.TableColumnData;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.AllColumns;
@@ -24,24 +23,9 @@ public class SelectItemIT extends BaseIT {
 	BaseIT result = null;
 	List<SelectItem> selectItems = null;
 	CIS552SO cis552SO = null;
+	TableResult newTableResult;
 
 	public SelectItemIT(List<SelectItem> selectItems, BaseIT result, CIS552SO cis552SO) throws SQLException {
-		if (selectItems.get(0) instanceof SelectExpressionItem) {
-			if (((SelectExpressionItem) selectItems.get(0)).getExpression() instanceof Function) {
-				Function funExp = (Function) ((SelectExpressionItem) selectItems.get(0)).getExpression();
-				switch (funExp.getName().toUpperCase()) {
-				case "COUNT":
-				case "SUM":
-				case "AVG":
-				case "MIN":
-				case "MAX":
-					result = new AggFunctionIT(result);
-					break;
-				}
-
-			}
-		}
-
 		this.selectItems = selectItems;
 		this.result = result;
 		this.cis552SO = cis552SO;
@@ -52,8 +36,10 @@ public class SelectItemIT extends BaseIT {
 		try {
 
 			TableResult oldTableResult = result.getNext();
-			TableResult newTableResult = new TableResult();
-			updateColDefMap(oldTableResult, newTableResult);
+			if (newTableResult == null) {
+				newTableResult = new TableResult();
+				updateColDefMap(oldTableResult, newTableResult);
+			}
 			return solveSelectItemExpression(oldTableResult, newTableResult);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -111,11 +97,10 @@ public class SelectItemIT extends BaseIT {
 	}
 
 	private void updateColDefMap(TableResult oldTableResult, TableResult newTableResult) {
-		newTableResult.fromItems.addAll(oldTableResult.fromItems);
+		newTableResult.fromTables.addAll(oldTableResult.fromTables);
 		newTableResult.aliasandTableName.putAll(oldTableResult.aliasandTableName);
 		if (selectItems.get(0) instanceof AllColumns) {
 			newTableResult.colPosWithTableAlias.putAll(oldTableResult.colPosWithTableAlias);
-
 		} else {
 			int pos = 0;
 			for (SelectItem si : selectItems) {

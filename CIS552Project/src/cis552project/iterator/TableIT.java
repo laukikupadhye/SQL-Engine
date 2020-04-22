@@ -1,10 +1,12 @@
 package cis552project.iterator;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -23,10 +25,11 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 public class TableIT extends BaseIT {
 	private File tableFile = null;
 	private TableResult tableRes = null;
-	private Scanner fileScanner = null;
+	// private Scanner fileScanner = null;
 	private List<Column> colList = null;
 	private TableColumnData selectTableTemp = null;
 	private CIS552SO cis552SO;
+	private BufferedReader csvBufferedReader;
 
 	public TableIT(Table table, CIS552SO cis552SO) {
 
@@ -35,15 +38,10 @@ public class TableIT extends BaseIT {
 		tableRes = new TableResult();
 		try {
 			tableFile = new File(cis552SO.dataPath, table.getName() + ".csv");
-			fileScanner = new Scanner(tableFile);
-
-		} catch (FileNotFoundException ex1) {
-			try {
-				tableFile = new File(cis552SO.dataPath, table.getName() + ".dat");
-				fileScanner = new Scanner(tableFile);
-			} catch (FileNotFoundException e) {
-				System.out.println("Exception : " + e.getLocalizedMessage());
-			}
+			// fileScanner = new Scanner(tableFile);
+			csvBufferedReader = new BufferedReader(new FileReader(tableFile));
+		} catch (FileNotFoundException e) {
+			System.out.println("Exception : " + e.getLocalizedMessage());
 		} finally {
 			this.selectTableTemp = cis552SO.tables.get(table.getName());
 			this.colList = selectTableTemp.colList;
@@ -67,10 +65,19 @@ public class TableIT extends BaseIT {
 	public boolean hasNext() {
 		tableRes.resultTuples = new ArrayList<>();
 		int n = cis552SO.tupleLimit;
-		while (fileScanner.hasNext() && n != 0) {
-			Tuple tuple = fetchConvertedTupleFromStringArray(fileScanner.nextLine().split("\\|"));
-			tableRes.resultTuples.add(tuple);
-			n--;
+		try {
+			String line = csvBufferedReader.readLine();
+			while (line != null && n != 0) {
+				Tuple tuple = fetchConvertedTupleFromStringArray(line.split("\\|"));
+				tableRes.resultTuples.add(tuple);
+				n--;
+				if (n != 0) {
+					line = csvBufferedReader.readLine();
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return CollectionUtils.isNotEmpty(tableRes.resultTuples);
 	}
@@ -78,7 +85,8 @@ public class TableIT extends BaseIT {
 	@Override
 	public void reset() {
 		try {
-			fileScanner = new Scanner(tableFile);
+			csvBufferedReader = new BufferedReader(new FileReader(tableFile));
+//			fileScanner = new Scanner(tableFile);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

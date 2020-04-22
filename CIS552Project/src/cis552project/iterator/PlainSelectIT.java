@@ -54,8 +54,8 @@ public class PlainSelectIT extends BaseIT {
 		if (plainSelect.getWhere() != null) {
 			where = extractExpressions(plainSelect.getWhere(), selectionPushedDown, joinsExpPushedDown, false);
 		}
-		evaluateInMemoryTable(inMemoryTableResult, plainSelect.getFromItem(), plainSelect.getJoins(),
-				selectionPushedDown);
+//		evaluateInMemoryTable(inMemoryTableResult, plainSelect.getFromItem(), plainSelect.getJoins(),
+//				selectionPushedDown);
 		FromItem fromItem = plainSelect.getFromItem();
 		if (fromItem instanceof Table && inMemoryTableResult.containsKey(((Table) fromItem).getName())) {
 			result = inMemoryTableResult.get(((Table) fromItem).getName());

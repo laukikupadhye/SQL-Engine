@@ -28,6 +28,8 @@ import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -63,23 +65,27 @@ public class PlainSelectIT extends BaseIT {
 					cis552SO);
 		} else {
 			boolean isAgg = false;
-			outer: for (SelectItem selectItem : plainSelect.getSelectItems()) {
-				if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
-					switch (((Function) ((SelectExpressionItem) selectItem).getExpression()).getName().toUpperCase()) {
-					case "COUNT":
-					case "SUM":
-					case "AVG":
-					case "MIN":
-					case "MAX":
-						isAgg = true;
-						break outer;
+			if (!(plainSelect.getSelectItems().get(0) instanceof AllColumns)
+					&& !(plainSelect.getSelectItems().get(0) instanceof AllTableColumns)) {
+				outer: for (SelectItem selectItem : plainSelect.getSelectItems()) {
+					if (((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
+						switch (((Function) ((SelectExpressionItem) selectItem).getExpression()).getName()
+								.toUpperCase()) {
+						case "COUNT":
+						case "SUM":
+						case "AVG":
+						case "MIN":
+						case "MAX":
+							isAgg = true;
+							break outer;
+						}
 					}
 				}
-			}
-			if (isAgg) {
-				result = new AggFunctionIT(result, plainSelect.getSelectItems(), cis552SO);
-			} else {
-				result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
+				if (isAgg) {
+					result = new AggFunctionIT(result, plainSelect.getSelectItems(), cis552SO);
+				} else {
+					result = new SelectItemIT(plainSelect.getSelectItems(), result, cis552SO);
+				}
 			}
 		}
 

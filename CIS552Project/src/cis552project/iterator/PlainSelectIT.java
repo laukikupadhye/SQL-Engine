@@ -141,9 +141,10 @@ public class PlainSelectIT extends BaseIT {
 				}
 			}
 		}
-		inMemoryTableResult.put(largestTable.getName(),
-				new InMemoryTableIT(new FromItemIT(largestTable, selectionPushedDown, cis552SO), cis552SO));
-
+		if (largestTable != null) {
+			inMemoryTableResult.put(largestTable.getName(),
+					new InMemoryTableIT(new FromItemIT(largestTable, selectionPushedDown, cis552SO), cis552SO));
+		}
 	}
 
 	@Override

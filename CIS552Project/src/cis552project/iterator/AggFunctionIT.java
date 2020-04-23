@@ -22,8 +22,6 @@ public class AggFunctionIT extends BaseIT {
 
 	public AggFunctionIT(BaseIT result, List<SelectItem> selectItems, CIS552SO cis552SO) throws SQLException {
 		this.cis552SO = cis552SO;
-		List<Tuple> resultTuples = new ArrayList<>();
-
 		TableResult initialTabRes = null;
 		PrimitiveValue[] resultRow = new PrimitiveValue[selectItems.size()];
 		long tupleCount = 0;
@@ -56,7 +54,6 @@ public class AggFunctionIT extends BaseIT {
 					resultRow[i] = primValue;
 				}
 			}
-			resultTuples.addAll(initialTabRes.resultTuples);
 		}
 
 		finalTableResult = new TableResult();
@@ -66,6 +63,7 @@ public class AggFunctionIT extends BaseIT {
 
 	@Override
 	public TableResult getNext() {
+            counter = 1;
 		return finalTableResult;
 	}
 

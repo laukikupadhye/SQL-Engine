@@ -29,6 +29,10 @@ public class Tuple {
 		if (getClass() != obj.getClass())
 			return false;
 		Tuple other = (Tuple) obj;
+//		String[] result1 = Arrays.stream(resultRow).map(PrimitiveValue::toRawString).toArray(String[]::new);
+//		String[] result2 = Arrays.stream(other.resultRow).map(PrimitiveValue::toRawString).toArray(String[]::new);
+//		Arrays.sort(result1);
+//		Arrays.sort(result2);
 		if (!Arrays.equals(resultRow, other.resultRow))
 			return false;
 		return true;

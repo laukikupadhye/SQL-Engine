@@ -49,10 +49,12 @@ public class PlainSelectIT extends BaseIT {
 		this.cis552SO = cis552SO;
 		Map<String, Expression> selectionPushedDown = new HashMap<>();
 		Expression where = null;
-		Map<Tuple, Expression> joinsExpPushedDown = new HashMap<>();
+		Map<Tuple, Expression> joinedConditionsExpPushedDown = new HashMap<>();
+		Map<Tuple, EqualsTo> joinsExpPushedDown = new HashMap<>();
 		Map<String, BaseIT> inMemoryTableResult = new HashMap<>();
 		if (plainSelect.getWhere() != null) {
-			where = extractExpressions(plainSelect.getWhere(), selectionPushedDown, joinsExpPushedDown, false);
+			where = extractExpressions(plainSelect.getWhere(), selectionPushedDown, joinedConditionsExpPushedDown,
+					joinsExpPushedDown, false);
 		}
 //		evaluateInMemoryTable(inMemoryTableResult, plainSelect.getFromItem(), plainSelect.getJoins(),
 //				selectionPushedDown);
@@ -69,11 +71,11 @@ public class PlainSelectIT extends BaseIT {
 						&& inMemoryTableResult.containsKey(((Table) joinFromItem).getName())) {
 
 					BaseIT result2 = inMemoryTableResult.get(((Table) joinFromItem).getName());
-					result = new JoinIT(result, result2, joinsExpPushedDown, cis552SO);
+					result = new JoinIT(result, result2, joinedConditionsExpPushedDown, joinsExpPushedDown, cis552SO);
 
 				} else {
 					BaseIT result2 = new FromItemIT(join.getRightItem(), selectionPushedDown, cis552SO);
-					result = new JoinIT(result2, result, joinsExpPushedDown, cis552SO);
+					result = new JoinIT(result2, result, joinedConditionsExpPushedDown, joinsExpPushedDown, cis552SO);
 				}
 			}
 		}
@@ -166,12 +168,13 @@ public class PlainSelectIT extends BaseIT {
 	}
 
 	private Expression extractExpressions(Expression where, Map<String, Expression> selectionPushedDown,
-			Map<Tuple, Expression> joinsPushedDown, boolean isAndExpression) throws SQLException {
+			Map<Tuple, Expression> joinedConditionsExpPushedDown, Map<Tuple, EqualsTo> joinsExpPushedDown,
+			boolean isAndExpression) throws SQLException {
 		if (where instanceof AndExpression) {
 			Expression leftExpression = extractExpressions(((AndExpression) where).getLeftExpression(),
-					selectionPushedDown, joinsPushedDown, true);
+					selectionPushedDown, joinedConditionsExpPushedDown, joinsExpPushedDown, true);
 			Expression rightExpression = extractExpressions(((AndExpression) where).getRightExpression(),
-					selectionPushedDown, joinsPushedDown, true);
+					selectionPushedDown, joinedConditionsExpPushedDown, joinsExpPushedDown, true);
 			if (leftExpression == null && rightExpression == null) {
 				return null;
 			} else if (leftExpression == null) {
@@ -199,7 +202,7 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
+									extractedJoinedColumn(where, joinedConditionsExpPushedDown, isAndExpression,
 											leftExpTable.getName(), rightExpTable.getName());
 									return null;
 								}
@@ -235,7 +238,7 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
+									extractedJoinedColumn(where, joinedConditionsExpPushedDown, isAndExpression,
 											leftExpTable.getName(), rightExpTable.getName());
 									return null;
 								}
@@ -271,7 +274,7 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
+									extractedJoinedColumn(where, joinedConditionsExpPushedDown, isAndExpression,
 											leftExpTable.getName(), rightExpTable.getName());
 									return null;
 								}
@@ -307,7 +310,7 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
+									extractedJoinedColumn(where, joinedConditionsExpPushedDown, isAndExpression,
 											leftExpTable.getName(), rightExpTable.getName());
 									return null;
 								}
@@ -343,8 +346,14 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
-											leftExpTable.getName(), rightExpTable.getName());
+									List<String> list = Arrays.asList(leftExpTable.getName(), rightExpTable.getName());
+									Collections.sort(list);
+
+									PrimitiveValue[] resultRow = { new StringValue(list.get(0)),
+											new StringValue(list.get(1)) };
+//									PrimitiveValue[] resultRow = { new StringValue(leftExpTable.getName()),
+//											new StringValue(rightExpTable.getName()) };
+									joinsExpPushedDown.put(new Tuple(resultRow), exp);
 									return null;
 								}
 							}
@@ -379,7 +388,7 @@ public class PlainSelectIT extends BaseIT {
 									extractedColumn(where, selectionPushedDown, isAndExpression, leftExpTable);
 									return null;
 								} else {
-									extractedJoinedColumn(where, joinsPushedDown, isAndExpression,
+									extractedJoinedColumn(where, joinedConditionsExpPushedDown, isAndExpression,
 											leftExpTable.getName(), rightExpTable.getName());
 									return null;
 								}

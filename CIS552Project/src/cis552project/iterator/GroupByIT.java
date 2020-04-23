@@ -106,7 +106,7 @@ public class GroupByIT extends BaseIT {
 						Eval eval = new ExpressionEvaluator(tuple, initialTabRes, cis552SO, null);
 						PrimitiveValue primValue = eval.eval(exp);
 
-						if (primValue instanceof DoubleValue && groupByMap.get(groupedTuple).resultRow[i] != null) {
+						if (groupByMap.get(groupedTuple).resultRow[i] != null) {
 							if (exp.toString().toUpperCase().contains("COUNT")) {
 								primValue = new DoubleValue(tupleCount.get(groupedTuple));
 							} else if (exp.toString().toUpperCase().contains("SUM")) {
